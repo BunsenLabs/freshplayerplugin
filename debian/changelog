@@ -1,5 +1,12 @@
+freshplayerplugin (0.3.1-2) unstable; urgency=medium
+
+  * Initial upload. (Closes: #775004: ITP: freshplayerplugin -- PPAPI-
+    host NPAPI-plugin adapter)
+
+ -- Vincent Danjean <vdanjean@debian.org>  Tue, 07 Jul 2015 09:55:54 +0200
+
 freshplayerplugin (0.3.1-1) unstable; urgency=low
 
-  * Initial release
+  * Initial private release
 
  -- Vincent Danjean <vdanjean@debian.org>  Mon, 06 Jul 2015 21:44:33 +0200
