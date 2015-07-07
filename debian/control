@@ -19,7 +19,7 @@ Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Recommends: pepperflashplugin-nonfree
 Description: PPAPI-host NPAPI-plugin adapter for pepperflash
- Flash plugin for linux provided by adobe stopped at version 11.2; for
+ Flash plugin for Linux provided by adobe stopped at version 11.2; for
  chrome/chromium users there is pepperflash plugin but it's not supported by
  firefox/iceweasel/other browsers.
  .
