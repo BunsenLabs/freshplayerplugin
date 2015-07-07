@@ -19,6 +19,17 @@ Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Recommends: pepperflashplugin-nonfree
 Conflicts: flashplugin-nonfree, flashplayer-mozilla
-Description: PPAPI-host NPAPI-plugin adapter
- This package allows one to run the pepper flash plugin (a PPAPI plugin) with
- iceweasel (or any other webbrowser using NPAPI plugins).
+Description: PPAPI-host NPAPI-plugin adapter for pepperflash
+ Flash plugin for linux provided by adobe stopped at version 11.2; for
+ chrome/chromium users there is pepperflash plugin but it's not supported by
+ firefox/iceweasel/other browsers.
+ .
+ The main goal of the project is to get PPAPI (Pepper) Flash player
+ working in Firefox. It implements a wrapper which behaves like
+ browser to PPAPI plugin and implements NPAPI plugin interface
+ for browser to use.
+ .
+ This particular implementation doesn't implement any sandboxing,
+ which means any malicious code can break through plugin security
+ as there are no additional barriers.  This is the same level of security as
+ NPAPI Flash have.
