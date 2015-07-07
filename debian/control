@@ -14,17 +14,14 @@ Homepage: https://github.com/i-rinat/freshplayerplugin
 Vcs-Git: git://anonscm.debian.org/collab-maint/freshplayerplugin.git
 Vcs-Browser: https://anonscm.debian.org/gitweb/?p=collab-maint/freshplayerplugin.git
 
-Package: browser-plugin-freshplayer
+Package: browser-plugin-freshplayer-pepperflash
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Recommends: pepperflashplugin-nonfree
 Description: PPAPI-host NPAPI-plugin adapter for pepperflash
- Flash plugin for Linux provided by adobe stopped at version 11.2; for
- chrome/chromium users there is pepperflash plugin but it's not supported by
- firefox/iceweasel/other browsers.
- .
- The main goal of the project is to get PPAPI (Pepper) Flash player
- working in Firefox. It implements a wrapper which behaves like
+ The main goal of the project is to get PPAPI (Chrome) plugins
+ working in Firefox (and any other web-browser supporting NPAPI plugins).
+ It implements a wrapper which behaves like
  browser to PPAPI plugin and implements NPAPI plugin interface
  for browser to use.
  .
@@ -32,3 +29,46 @@ Description: PPAPI-host NPAPI-plugin adapter for pepperflash
  which means any malicious code can break through plugin security
  as there are no additional barriers.  This is the same level of security as
  NPAPI Flash have.
+ .
+ Flash plugin for Linux provided by adobe stopped at version 11.2; for
+ chrome/chromium users there is pepperflash plugin but it's not supported by
+ firefox/iceweasel/other browsers.
+ .
+ This package allows one to use the Pepper Flash plugin from Chrome
+ in NPAPI web browsers.
+
+Package: browser-plugin-freshplayer-libpdf
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: PPAPI-host NPAPI-plugin adapter for libpdf.so from Chrome
+ The main goal of the project is to get PPAPI (Chrome) plugins
+ working in Firefox (and any other web-browser supporting NPAPI plugins).
+ It implements a wrapper which behaves like
+ browser to PPAPI plugin and implements NPAPI plugin interface
+ for browser to use.
+ .
+ This particular implementation doesn't implement any sandboxing,
+ which means any malicious code can break through plugin security
+ as there are no additional barriers.  This is the same level of security as
+ NPAPI Flash have.
+ .
+ This package allows one to use the libpdf.so plugin from Chrome
+ in NPAPI web browsers.
+
+Package: browser-plugin-freshplayer-nacl
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: PPAPI-host NPAPI-plugin adapter for Native Client from Chrome
+ The main goal of the project is to get PPAPI (Chrome) plugins
+ working in Firefox (and any other web-browser supporting NPAPI plugins).
+ It implements a wrapper which behaves like
+ browser to PPAPI plugin and implements NPAPI plugin interface
+ for browser to use.
+ .
+ This particular implementation doesn't implement any sandboxing,
+ which means any malicious code can break through plugin security
+ as there are no additional barriers.  This is the same level of security as
+ NPAPI Flash have.
+ .
+ This package allows one to use the Native Client plugin from Chrome
+ (libppGoogleNaClPluginChrome.so) in NPAPI web browsers.

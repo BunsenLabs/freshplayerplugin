@@ -27,6 +27,12 @@ include /usr/share/dpkg/default.mk
 #	dh_auto_configure -- \
 #	-DCMAKE_LIBRARY_PATH=$(DEB_HOST_MULTIARCH)
 
+override_dh_auto_configure:
+	dh_auto_configure -- \
+		-DWITH_LIBPDF=TRUE \
+		-DWITH_NACL=TRUE \
+		-DWITH_PEPPERFLASH=TRUE
+
 override_dh_makeshlibs:
 	# not invoking dh_makeshlibs: the generated library is private
 	# no need to generate shlibs file nor ldconfig calls
