@@ -2,6 +2,7 @@ freshplayerplugin (0.3.2-1) unstable; urgency=medium
 
   * New upstream release (Closes: #796856)
     + should fix "FTBFS on big endian builds", fixed upstream (Closes: #794668)
+  * Add "--as-needed" to linker flags (avoid unneeded library dependencies)
 
  -- Vincent Danjean <vdanjean@debian.org>  Tue, 25 Aug 2015 10:53:29 +0200
 
