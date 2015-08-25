@@ -32,6 +32,9 @@ struct fpp_config_s {
     int     audio_buffer_min_ms;
     int     audio_buffer_max_ms;
     int     audio_use_jack;
+    int     jack_autoconnect_ports;
+    char   *jack_server_name;
+    int     jack_autostart_server;
     char   *pepperflash_path;
     char   *flash_command_line;
     int     enable_3d;
@@ -46,6 +49,9 @@ struct fpp_config_s {
     int     enable_vaapi;
     int     enable_vdpau;
     int     tie_fullscreen_window_to_browser;
+    int     vsync_afterwait_us;
+    int     fs_delay_ms;
+    int     enable_vsync;
     struct {
         int   connect_first_loader_to_unrequested_stream;
         int   dump_resource_histogram;

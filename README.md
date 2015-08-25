@@ -68,7 +68,7 @@ Project is using cmake (>=2.8.8) build system.
            libssl-dev libglib2.0-dev libconfig-dev libpango1.0-dev       \
            libgl1-mesa-dev libevent-dev libgtk2.0-dev libxrandr-dev      \
            libxrender-dev libxcursor-dev libv4l-dev libgles2-mesa-dev    \
-           libavcodec-dev libva-dev libvdpau-dev
+           libavcodec-dev libva-dev libvdpau-dev libdrm-dev
 ```
 * (optional) To enable PulseAudio support, install `libpulse-dev`.
 * (optional) To enable JACK support, install `libjack-jackd2-dev` and `libsoxr-dev`
@@ -99,6 +99,15 @@ you disable hwdec by `WITH_HWDEC=0`. To do so, change configuration step command
 
 Note, even if built, hardware-accelerated video decoding is still disabled by default.
 You need to explicitly enable it in configuration file.
+
+Install / OpenGL|ES 2 support
+-----------------------------
+
+Although it's better to use system implementation of OpenGL|ES 2, it's still possible
+to leverage [ANGLE](https://code.google.com/p/angleproject/) GLES2 emulation by adding
+`WITH_GLES2=0` to cmake command line at configuration time (`-DWITH_GLES2=0` to be exact).
+Note, that requires C++11-capable compiler.
+
 
 License
 =======

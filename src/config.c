@@ -33,6 +33,9 @@ static struct fpp_config_s default_config = {
     .audio_buffer_min_ms =      20,
     .audio_buffer_max_ms =      500,
     .audio_use_jack      =      0,
+    .jack_autoconnect_ports =   1,
+    .jack_server_name =         NULL,
+    .jack_autostart_server =    1,
     .pepperflash_path    =      NULL,
     .flash_command_line  =      "", // "enable_hw_video_decode=1,enable_stagevideo_auto=1",
     .enable_3d           =      1,
@@ -47,6 +50,9 @@ static struct fpp_config_s default_config = {
     .enable_vaapi =             1,
     .enable_vdpau =             1,
     .tie_fullscreen_window_to_browser = 1,
+    .vsync_afterwait_us =       0,
+    .fs_delay_ms =              300,
+    .enable_vsync =             1,
     .quirks = {
         .connect_first_loader_to_unrequested_stream = 0,
         .dump_resource_histogram    = 0,
@@ -149,6 +155,8 @@ fpp_config_initialize(void)
     get_int(&cfg, "audio_buffer_min_ms", &config.audio_buffer_min_ms);
     get_int(&cfg, "audio_buffer_max_ms", &config.audio_buffer_max_ms);
     get_int(&cfg, "audio_use_jack", &config.audio_use_jack);
+    get_int(&cfg, "jack_autoconnect_ports", &config.jack_autoconnect_ports);
+    get_int(&cfg, "jack_autostart_server", &config.jack_autostart_server);
     get_int(&cfg, "enable_3d", &config.enable_3d);
     get_int(&cfg, "enable_hwdec", &config.enable_hwdec);
     get_int(&cfg, "quiet", &config.quiet);
@@ -161,9 +169,13 @@ fpp_config_initialize(void)
     get_int(&cfg, "enable_vaapi", &config.enable_vaapi);
     get_int(&cfg, "enable_vdpau", &config.enable_vdpau);
     get_int(&cfg, "tie_fullscreen_window_to_browser", &config.tie_fullscreen_window_to_browser);
+    get_int(&cfg, "vsync_afterwait_us", &config.vsync_afterwait_us);
+    get_int(&cfg, "fs_delay_ms", &config.fs_delay_ms);
+    get_int(&cfg, "enable_vsync", &config.enable_vsync);
 
     get_string(&cfg, "pepperflash_path", &config.pepperflash_path);
     get_string(&cfg, "flash_command_line", &config.flash_command_line);
+    get_string(&cfg, "jack_server_name", &config.jack_server_name);
 
     get_double(&cfg, "device_scale", &config.device_scale);
 
@@ -198,6 +210,7 @@ fpp_config_destroy(void)
 
     FREE_IF_CHANGED(pepperflash_path);
     FREE_IF_CHANGED(flash_command_line);
+    FREE_IF_CHANGED(jack_server_name);
     g_free(pepper_data_dir);
     g_free(pepper_salt_file_name);
     initialized = 0;
