@@ -1,3 +1,9 @@
+freshplayerplugin (0.3.2-1~bpo8+1) jessie-backports; urgency=medium
+
+  * Rebuild for jessie-backports.
+
+ -- Vincent Danjean <vdanjean@debian.org>  Sun, 30 Aug 2015 23:38:21 +0200
+
 freshplayerplugin (0.3.2-1) unstable; urgency=medium
 
   * New upstream release (Closes: #796856)
