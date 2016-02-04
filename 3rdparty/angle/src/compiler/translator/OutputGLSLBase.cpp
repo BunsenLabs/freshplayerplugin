@@ -51,7 +51,6 @@ bool isSingleStatement(TIntermNode *node)
 }  // namespace
 
 TOutputGLSLBase::TOutputGLSLBase(TInfoSinkBase &objSink,
-                                 ShArrayIndexClampingStrategy clampingStrategy,
                                  ShHashFunction64 hashFunction,
                                  NameMap &nameMap,
                                  TSymbolTable &symbolTable,
@@ -60,7 +59,6 @@ TOutputGLSLBase::TOutputGLSLBase(TInfoSinkBase &objSink,
     : TIntermTraverser(true, true, true),
       mObjSink(objSink),
       mDeclaringVariables(false),
-      mClampingStrategy(clampingStrategy),
       mHashFunction(hashFunction),
       mNameMap(nameMap),
       mSymbolTable(symbolTable),
@@ -99,28 +97,7 @@ void TOutputGLSLBase::writeVariableType(const TType &type)
     TQualifier qualifier = type.getQualifier();
     if (qualifier != EvqTemporary && qualifier != EvqGlobal)
     {
-        if (IsGLSL130OrNewer(mOutput))
-        {
-            switch (qualifier)
-            {
-              case EvqAttribute:
-                out << "in ";
-                break;
-              case EvqVaryingIn:
-                out << "in ";
-                break;
-              case EvqVaryingOut:
-                out << "out ";
-                break;
-              default:
-                out << type.getQualifierString() << " ";
-                break;
-            }
-        }
-        else
-        {
-            out << type.getQualifierString() << " ";
-        }
+        out << type.getQualifierString() << " ";
     }
     // Declare the struct if we have not done so already.
     if (type.getBasicType() == EbtStruct && !structDeclared(type.getStruct()))
@@ -316,41 +293,7 @@ bool TOutputGLSLBase::visitBinary(Visit visit, TIntermBinary *node)
         writeTriplet(visit, NULL, "[", "]");
         break;
       case EOpIndexIndirect:
-        if (node->getAddIndexClamp())
-        {
-            if (visit == InVisit)
-            {
-                if (mClampingStrategy == SH_CLAMP_WITH_CLAMP_INTRINSIC)
-                    out << "[int(clamp(float(";
-                else
-                    out << "[webgl_int_clamp(";
-            }
-            else if (visit == PostVisit)
-            {
-                int maxSize;
-                TIntermTyped *left = node->getLeft();
-                TType leftType = left->getType();
-
-                if (left->isArray())
-                {
-                    // The shader will fail validation if the array length is not > 0.
-                    maxSize = leftType.getArraySize() - 1;
-                }
-                else
-                {
-                    maxSize = leftType.getNominalSize() - 1;
-                }
-
-                if (mClampingStrategy == SH_CLAMP_WITH_CLAMP_INTRINSIC)
-                    out << "), 0.0, float(" << maxSize << ")))]";
-                else
-                    out << ", 0, " << maxSize << ")]";
-            }
-        }
-        else
-        {
-            writeTriplet(visit, NULL, "[", "]");
-        }
+        writeTriplet(visit, NULL, "[", "]");
         break;
       case EOpIndexDirectStruct:
         if (visit == InVisit)
@@ -783,7 +726,7 @@ bool TOutputGLSLBase::visitAggregate(Visit visit, TIntermAggregate *node)
                 out << arrayBrackets(type);
         }
 
-        out << " " << hashFunctionName(node->getName());
+        out << " " << hashFunctionNameIfNeeded(node->getNameObj());
 
         out << "(";
         writeFunctionParameters(*(node->getSequence()));
@@ -801,7 +744,7 @@ bool TOutputGLSLBase::visitAggregate(Visit visit, TIntermAggregate *node)
                 out << arrayBrackets(type);
         }
 
-        out << " " << hashFunctionName(node->getName());
+        out << " " << hashFunctionNameIfNeeded(node->getNameObj());
 
         incrementDepth(node);
         // Function definition node contains one or two children nodes
@@ -830,16 +773,7 @@ bool TOutputGLSLBase::visitAggregate(Visit visit, TIntermAggregate *node)
       case EOpFunctionCall:
         // Function call.
         if (visit == PreVisit)
-            out << hashFunctionName(node->getName()) << "(";
-        else if (visit == InVisit)
-            out << ", ";
-        else
-            out << ")";
-        break;
-      case EOpInternalFunctionCall:
-        // Function call to an internal helper function.
-        if (visit == PreVisit)
-            out << node->getName() << "(";
+            out << hashFunctionNameIfNeeded(node->getNameObj()) << "(";
         else if (visit == InVisit)
             out << ", ";
         else
@@ -921,11 +855,41 @@ bool TOutputGLSLBase::visitAggregate(Visit visit, TIntermAggregate *node)
       case EOpConstructIVec4:
         writeConstructorTriplet(visit, node->getType(), "ivec4");
         break;
+      case EOpConstructUInt:
+        writeConstructorTriplet(visit, node->getType(), "uint");
+        break;
+      case EOpConstructUVec2:
+        writeConstructorTriplet(visit, node->getType(), "uvec2");
+        break;
+      case EOpConstructUVec3:
+        writeConstructorTriplet(visit, node->getType(), "uvec3");
+        break;
+      case EOpConstructUVec4:
+        writeConstructorTriplet(visit, node->getType(), "uvec4");
+        break;
       case EOpConstructMat2:
         writeConstructorTriplet(visit, node->getType(), "mat2");
         break;
+      case EOpConstructMat2x3:
+        writeConstructorTriplet(visit, node->getType(), "mat2x3");
+        break;
+      case EOpConstructMat2x4:
+        writeConstructorTriplet(visit, node->getType(), "mat2x4");
+        break;
+      case EOpConstructMat3x2:
+        writeConstructorTriplet(visit, node->getType(), "mat3x2");
+        break;
       case EOpConstructMat3:
         writeConstructorTriplet(visit, node->getType(), "mat3");
+        break;
+      case EOpConstructMat3x4:
+        writeConstructorTriplet(visit, node->getType(), "mat3x4");
+        break;
+      case EOpConstructMat4x2:
+        writeConstructorTriplet(visit, node->getType(), "mat4x2");
+        break;
+      case EOpConstructMat4x3:
+        writeConstructorTriplet(visit, node->getType(), "mat4x3");
         break;
       case EOpConstructMat4:
         writeConstructorTriplet(visit, node->getType(), "mat4");
@@ -1167,6 +1131,9 @@ TString TOutputGLSLBase::getTypeName(const TType &type)
           case EbtBool:
             out << "bvec";
             break;
+          case EbtUInt:
+            out << "uvec";
+            break;
           default:
             UNREACHABLE();
         }
@@ -1201,12 +1168,16 @@ TString TOutputGLSLBase::hashVariableName(const TString &name)
     return hashName(name);
 }
 
-TString TOutputGLSLBase::hashFunctionName(const TString &mangled_name)
+TString TOutputGLSLBase::hashFunctionNameIfNeeded(const TName &mangledName)
 {
-    TString name = TFunction::unmangleName(mangled_name);
-    if (mSymbolTable.findBuiltIn(mangled_name, mShaderVersion) != NULL || name == "main")
+    TString mangledStr = mangledName.getString();
+    TString name = TFunction::unmangleName(mangledStr);
+    if (mSymbolTable.findBuiltIn(mangledStr, mShaderVersion) != nullptr || name == "main")
         return translateTextureFunction(name);
-    return hashName(name);
+    if (mangledName.isInternal())
+        return name;
+    else
+        return hashName(name);
 }
 
 bool TOutputGLSLBase::structDeclared(const TStructure *structure) const

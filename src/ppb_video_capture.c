@@ -27,8 +27,10 @@
 #include <stdlib.h>
 #include "pp_resource.h"
 #include "ppb_core.h"
+#include "ppb_message_loop.h"
 #include "trace.h"
 #include "tables.h"
+#include "config.h"
 #include "ppb_device_ref.h"
 #include "ppb_var.h"
 #include "ppb_buffer.h"
@@ -136,6 +138,13 @@ static
 int
 video_device_is_usable(const char *dev, char **shortname)
 {
+    if (!config.probe_video_capture_devices) {
+        // do not probe device, assume it have default name,
+        // and is capable of video capturing
+        *shortname = g_strdup("Unknown");
+        return 1;
+    }
+
     int fd = v4l2_open(dev, O_RDWR);
     if (fd < 0)
         return 0;
@@ -223,7 +232,8 @@ ppb_video_capture_enumerate_devices(PP_Resource video_capture, struct PP_ArrayOu
         devs[k] = g_array_index(vc_devices, PP_Resource, k);
 
     retval = PP_OK_COMPLETIONPENDING;
-    ppb_core_call_on_main_thread2(0, callback, PP_OK, __func__);
+    ppb_message_loop_post_work_with_result(ppb_message_loop_get_current(), callback, 0, PP_OK, 0,
+                                           __func__);
 
 err:
     pp_resource_release(video_capture);
@@ -366,7 +376,9 @@ point_2:
     vc->fd = -1;
 point_1:
     pp_resource_release(video_capture);
-    ppb_core_call_on_main_thread2(0, callback, result, __func__);
+
+    ppb_message_loop_post_work_with_result(ppb_message_loop_get_current(), callback, 0, result,
+                                           0, __func__);
     return PP_OK_COMPLETIONPENDING;
 }
 
@@ -443,7 +455,9 @@ video_capture_thread(void *param)
         p->video_capture =          video_capture;
         p->buf_idx =                buf_idx;
         p->ppp_video_capture_dev =  vc->ppp_video_capture_dev;
-        ppb_core_call_on_main_thread2(0, PP_MakeCCB(on_buffer_ready_comt, p), PP_OK, __func__);
+        ppb_message_loop_post_work_with_result(vc->message_loop,
+                                               PP_MakeCCB(on_buffer_ready_comt, p), 0, PP_OK, 0,
+                                               __func__);
     }
 
     pp_resource_release(video_capture);
@@ -471,6 +485,9 @@ ppb_video_capture_start_capture(PP_Resource video_capture)
         pp_resource_release(video_capture);
         return PP_ERROR_FAILED;
     }
+
+    // memorize current message loop. It'll be used for callbacks
+    vc->message_loop = ppb_message_loop_get_current();
 
     vc->ppp_video_capture_dev->OnStatus(vc->instance->id, video_capture,
                                         PP_VIDEO_CAPTURE_STATUS_STARTING);

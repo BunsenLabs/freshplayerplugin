@@ -10,6 +10,8 @@ set(test_list
     test_ppb_url_request_info
     test_ppb_x509_certificate
     test_uri_parser
+    test_ppb_net_address
+    test_config_parser
 )
 
 link_directories(
@@ -25,6 +27,7 @@ foreach(item ${test_list})
         $<TARGET_OBJECTS:freshwrapper-obj>
         $<TARGET_OBJECTS:parson-obj>
         $<TARGET_OBJECTS:uri-parser-obj>
+        $<TARGET_OBJECTS:config-parser-obj>
         ../src/config_pepperflash.c
         common.c)
     target_link_libraries(${item}

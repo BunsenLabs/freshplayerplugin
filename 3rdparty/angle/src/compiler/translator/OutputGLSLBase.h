@@ -17,7 +17,6 @@ class TOutputGLSLBase : public TIntermTraverser
 {
   public:
     TOutputGLSLBase(TInfoSinkBase &objSink,
-                    ShArrayIndexClampingStrategy clampingStrategy,
                     ShHashFunction64 hashFunction,
                     NameMap &nameMap,
                     TSymbolTable& symbolTable,
@@ -57,8 +56,8 @@ class TOutputGLSLBase : public TIntermTraverser
     TString hashName(const TString &name);
     // Same as hashName(), but without hashing built-in variables.
     TString hashVariableName(const TString &name);
-    // Same as hashName(), but without hashing built-in functions.
-    TString hashFunctionName(const TString &mangled_name);
+    // Same as hashName(), but without hashing built-in functions and with unmangling.
+    TString hashFunctionNameIfNeeded(const TName &mangledName);
     // Used to translate function names for differences between ESSL and GLSL
     virtual TString translateTextureFunction(TString &name) { return name; }
 
@@ -76,8 +75,6 @@ class TOutputGLSLBase : public TIntermTraverser
 
     // Stack of loops that need to be unrolled.
     TLoopStack mLoopUnrollStack;
-
-    ShArrayIndexClampingStrategy mClampingStrategy;
 
     // name hashing.
     ShHashFunction64 mHashFunction;

@@ -22,68 +22,13 @@
  * SOFTWARE.
  */
 
-#include <pthread.h>
-#include <stdarg.h>
-#include <stdio.h>
-#include <unistd.h>
-#include <sys/syscall.h>
-#include <stdlib.h>
 #include "trace.h"
-#include "config.h"
 #include "pp_resource.h"
 #include "ppb_var.h"
-#include <inttypes.h>
 #include <ppapi/c/pp_graphics_3d.h>
 #include <glib.h>
+#include <inttypes.h>
 
-
-static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
-static __thread struct timespec tictoc_ts;
-
-
-void
-trace_info(const char *fmt, ...)
-{
-    if (config.quiet)
-        return;
-    pthread_mutex_lock(&lock);
-    va_list args;
-//    fprintf(stdout, "[fresh] ");
-    fprintf(stdout, "[fresh %5d] ", (int)syscall(__NR_gettid));
-    va_start(args, fmt);
-    vfprintf(stdout, fmt, args);
-    va_end(args);
-    pthread_mutex_unlock(&lock);
-}
-
-void
-trace_warning(const char *fmt, ...)
-{
-    pthread_mutex_lock(&lock);
-    va_list args;
-    fprintf(stdout, "[fresh] [warning] ");
-    va_start(args, fmt);
-    vfprintf(stdout, fmt, args);
-    va_end(args);
-    pthread_mutex_unlock(&lock);
-}
-
-void
-trace_error(const char *fmt, ...)
-{
-    pthread_mutex_lock(&lock);
-    va_list args;
-    fprintf(stderr, "[fresh] [error] ");
-    va_start(args, fmt);
-    vfprintf(stderr, fmt, args);
-    va_end(args);
-
-    fprintf(stdout, "[fresh] [error] ");
-    va_start(args, fmt);
-    vfprintf(stdout, fmt, args);
-    va_end(args);
-    pthread_mutex_unlock(&lock);
-}
 
 static
 char *
@@ -389,16 +334,26 @@ trace_graphics3d_attributes_as_string(const int32_t attrib_list[])
     return g_string_free(s, FALSE);
 }
 
-void
-trace_duration_tic(void)
+char *
+trace_netaddress_ipv4_as_string(const struct PP_NetAddress_IPv4 *addr)
 {
-    clock_gettime(CLOCK_REALTIME, &tictoc_ts);
+    if (!addr)
+        return g_strdup_printf("(nil)");
+
+    return g_strdup_printf("%u.%u.%u.%u:%u", addr->addr[0], addr->addr[1], addr->addr[2],
+                           addr->addr[3], addr->port);
 }
 
-double
-trace_duration_toc(void)
+char *
+trace_netaddress_ipv6_as_string(const struct PP_NetAddress_IPv6 *addr)
 {
-    struct timespec ts;
-    clock_gettime(CLOCK_REALTIME, &ts);
-    return (ts.tv_sec - tictoc_ts.tv_sec) + 1e-9 * (ts.tv_nsec - tictoc_ts.tv_nsec);
+    if (!addr)
+        return g_strdup_printf("(nil)");
+
+    return g_strdup_printf("[%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:"
+                           "%02x%02x]:%u", addr->addr[0], addr->addr[1], addr->addr[2],
+                           addr->addr[3], addr->addr[4], addr->addr[5], addr->addr[6],
+                           addr->addr[7], addr->addr[8], addr->addr[9], addr->addr[10],
+                           addr->addr[11], addr->addr[12], addr->addr[13], addr->addr[14],
+                           addr->addr[15], addr->port);
 }
