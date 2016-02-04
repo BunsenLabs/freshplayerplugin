@@ -6,11 +6,14 @@
 
 #include "compiler/translator/VersionGLSL.h"
 
-static const int GLSL_VERSION_110 = 110;
-static const int GLSL_VERSION_120 = 120;
-static const int GLSL_VERSION_130 = 130;
-static const int GLSL_VERSION_410 = 410;
-static const int GLSL_VERSION_420 = 420;
+int ShaderOutputTypeToGLSLVersion(ShShaderOutput output)
+{
+    switch (output)
+    {
+      case SH_GLSL_COMPATIBILITY_OUTPUT: return GLSL_VERSION_110;
+      default: UNREACHABLE();            return 0;
+    }
+}
 
 // We need to scan for the following:
 // 1. "invariant" keyword: This can occur in both - vertex and fragment shaders
@@ -32,33 +35,21 @@ static const int GLSL_VERSION_420 = 420;
 TVersionGLSL::TVersionGLSL(sh::GLenum type,
                            const TPragma &pragma,
                            ShShaderOutput output)
+    : TIntermTraverser(true, false, false)
 {
-    if (output == SH_GLSL_130_OUTPUT)
+    mVersion = ShaderOutputTypeToGLSLVersion(output);
+    if (pragma.stdgl.invariantAll)
     {
-        mVersion = GLSL_VERSION_130;
-    }
-    else if (output == SH_GLSL_410_CORE_OUTPUT)
-    {
-        mVersion = GLSL_VERSION_410;
-    }
-    else if (output == SH_GLSL_420_CORE_OUTPUT)
-    {
-        mVersion = GLSL_VERSION_420;
-    }
-    else
-    {
-      ASSERT(output == SH_GLSL_COMPATIBILITY_OUTPUT);
-      if (pragma.stdgl.invariantAll)
-          mVersion = GLSL_VERSION_120;
-      else
-          mVersion = GLSL_VERSION_110;
+        ensureVersionIsAtLeast(GLSL_VERSION_120);
     }
 }
 
 void TVersionGLSL::visitSymbol(TIntermSymbol *node)
 {
     if (node->getSymbol() == "gl_PointCoord")
-        updateVersion(GLSL_VERSION_120);
+    {
+        ensureVersionIsAtLeast(GLSL_VERSION_120);
+    }
 }
 
 bool TVersionGLSL::visitAggregate(Visit, TIntermAggregate *node)
@@ -76,12 +67,12 @@ bool TVersionGLSL::visitAggregate(Visit, TIntermAggregate *node)
             const TIntermSequence &sequence = *(node->getSequence());
             if (sequence.front()->getAsTyped()->getType().isInvariant())
             {
-                updateVersion(GLSL_VERSION_120);
+                ensureVersionIsAtLeast(GLSL_VERSION_120);
             }
             break;
         }
       case EOpInvariantDeclaration:
-        updateVersion(GLSL_VERSION_120);
+        ensureVersionIsAtLeast(GLSL_VERSION_120);
         break;
       case EOpParameters:
         {
@@ -95,7 +86,7 @@ bool TVersionGLSL::visitAggregate(Visit, TIntermAggregate *node)
                     TQualifier qualifier = param->getQualifier();
                     if ((qualifier == EvqOut) || (qualifier ==  EvqInOut))
                     {
-                        updateVersion(GLSL_VERSION_120);
+                        ensureVersionIsAtLeast(GLSL_VERSION_120);
                         break;
                     }
                 }
@@ -105,7 +96,13 @@ bool TVersionGLSL::visitAggregate(Visit, TIntermAggregate *node)
             break;
         }
       case EOpConstructMat2:
+      case EOpConstructMat2x3:
+      case EOpConstructMat2x4:
+      case EOpConstructMat3x2:
       case EOpConstructMat3:
+      case EOpConstructMat3x4:
+      case EOpConstructMat4x2:
+      case EOpConstructMat4x3:
       case EOpConstructMat4:
         {
             const TIntermSequence &sequence = *(node->getSequence());
@@ -114,7 +111,7 @@ bool TVersionGLSL::visitAggregate(Visit, TIntermAggregate *node)
                 TIntermTyped *typed = sequence.front()->getAsTyped();
                 if (typed && typed->isMatrix())
                 {
-                    updateVersion(GLSL_VERSION_120);
+                    ensureVersionIsAtLeast(GLSL_VERSION_120);
                 }
             }
             break;
@@ -126,7 +123,7 @@ bool TVersionGLSL::visitAggregate(Visit, TIntermAggregate *node)
     return visitChildren;
 }
 
-void TVersionGLSL::updateVersion(int version)
+void TVersionGLSL::ensureVersionIsAtLeast(int version)
 {
     mVersion = std::max(version, mVersion);
 }

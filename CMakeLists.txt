@@ -1,12 +1,17 @@
 project(freshplayerplugin)
 cmake_minimum_required(VERSION 2.8.8)
 
+# version
+set(VER_MAJOR 0)
+set(VER_MINOR 3)
+set(VER_MICRO 4)
+
 # setup compiler flags
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99 -fPIC -fvisibility=hidden -pthread")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99 -fPIC -pthread")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Werror=format-security")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror=implicit-function-declaration")
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fPIC -fvisibility=hidden -pthread")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fPIC -pthread")
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Werror=format-security")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=implicit-function-declaration")
 
@@ -17,6 +22,16 @@ set(CMAKE_C_FLAGS_RELWITHDEBINFO "${CMAKE_C_FLAGS_RELWITHDEBINFO} -DNDEBUG -g3")
 # generate more debug info for Debug build type
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -g3")
 set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -O0 -g3")
+
+# directory for auto-generated headers
+include_directories("${CMAKE_BINARY_DIR}")
+
+# determine software version
+add_custom_target(git-revision ALL
+                  COMMAND sh "${CMAKE_SOURCE_DIR}/cmake/update-version-info.sh"
+                  "${CMAKE_SOURCE_DIR}" "${CMAKE_BINARY_DIR}" ${VER_MAJOR}
+                  ${VER_MINOR} ${VER_MICRO}
+                  WORKING_DIRECTORY "${CMAKE_BINARY_DIR}")
 
 # find Ragel
 find_program(RAGEL ragel)
@@ -35,7 +50,6 @@ pkg_check_modules(REQ
     xrender
     xcursor
     gl
-    libconfig
     libdrm
     libevent
     libevent_pthreads
@@ -64,7 +78,7 @@ list(APPEND REQ_INCLUDE_DIRS ${GTK_INCLUDE_DIRS})
 list(APPEND REQ_LIBRARIES    ${GTK_LIBRARIES})
 
 # OpenGL ES 2
-set(WITH_GLES2 TRUE CACHE STRING "use system libGLESv2")
+set(WITH_GLES2 FALSE CACHE BOOLEAN "use system libGLESv2")
 if (WITH_GLES2)
     pkg_check_modules(GLES2 glesv2 REQUIRED)
     add_definitions(-DHAVE_GLES2=1)
@@ -117,7 +131,6 @@ if (WITH_HWDEC)
     list(APPEND REQ_INCLUDE_DIRS ${HWDEC_INCLUDE_DIRS})
     list(APPEND REQ_LIBRARIES    ${HWDEC_LIBRARIES})
     add_subdirectory(cmake/ffmpeg-compat)
-    include_directories("${CMAKE_BINARY_DIR}")
 endif()
 
 # using libv4l2 for colorspace conversion
@@ -132,8 +145,6 @@ else()
     add_definitions(-DHAVE_LIBV4L2=0)
 endif()
 
-list(APPEND REQ_LIBRARIES img-resources)
-
 include_directories(${REQ_INCLUDE_DIRS})
 link_directories(${REQ_LIBRARY_DIRS})
 add_definitions(${REQ_CFLAGS_OTHER})
@@ -144,6 +155,8 @@ if (NOT WITH_GLES2)
     include_directories(3rdparty/angle/include)
     list(APPEND REQ_LIBRARIES shader_translator)
 endif()
+
+set(SYMBOLMAP "-Wl,-version-script=\"${CMAKE_SOURCE_DIR}/src/symbolmap\"")
 
 add_subdirectory(3rdparty)
 add_subdirectory(resources)

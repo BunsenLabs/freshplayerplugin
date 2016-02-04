@@ -148,7 +148,8 @@ do_load_ppp_module(const char *fname)
 
     if (!ppp_initialize_module || !ppp_get_interface) {
         trace_error("%s, one of required PPP_* is missing\n", __func__);
-        dlclose(module_dl_handler);
+        if (module_dl_handler)
+            dlclose(module_dl_handler);
         module_dl_handler = NULL;
         return 1;
     }
@@ -335,14 +336,14 @@ unload_ppp_module(void)
     // call module shutdown handler if exists
     call_plugin_shutdown_module();
 
-    dlclose(module_dl_handler);
+    if (module_dl_handler)
+        dlclose(module_dl_handler);
     module_dl_handler = NULL;
 
     fpp_config_destroy();
 }
 
 
-__attribute__((visibility("default")))
 const char *
 NP_GetMIMEDescription(void)
 {
@@ -350,7 +351,6 @@ NP_GetMIMEDescription(void)
     return fpp_config_get_plugin_mime_type();
 }
 
-__attribute__((visibility("default")))
 char *
 NP_GetPluginVersion(void)
 {
@@ -359,7 +359,6 @@ NP_GetPluginVersion(void)
     return module_version;
 }
 
-__attribute__((visibility("default")))
 NPError
 NP_GetValue(void *instance, NPPVariable variable, void *value)
 {
@@ -398,7 +397,52 @@ x_io_error_hanlder(Display *dpy)
     return 0;
 }
 
-__attribute__((visibility("default")))
+static
+void
+call_gdb_signal_handler(int sig, siginfo_t *si, void *p)
+{
+    static char cmd[4096];
+
+    pid_t pid = getpid();
+    time_t now = time(NULL);
+
+    // ask gdb to debug this process
+    snprintf(cmd, sizeof(cmd), "gdb --pid %d"
+             " -ex 'set logging file /tmp/freshwrapper-backtrace-%d-%d.txt'"
+             " -ex 'set logging on'"
+             " -ex 'set pagination off'"
+             " -ex 'echo === backtrace triggered by signal %d ===\\n'"
+             " -ex 'echo === current thread ===\\n'"
+             " -ex bt"
+             " -ex 'echo === thread list ===\\n'"
+             " -ex 'info threads'"
+             " -ex 'echo === all threads ===\\n'"
+             " -ex 'thread apply all bt full'"
+             " -ex 'set confirm off'"
+             " -ex 'quit'",
+             (int)pid, (int)now, (int)pid, sig);
+
+    // call gdb
+    system(cmd);
+
+    exit(sig);
+}
+
+static
+void
+setup_sig_handlers(void)
+{
+    struct sigaction sa = {};
+
+    sa.sa_flags = SA_SIGINFO;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_sigaction = call_gdb_signal_handler;
+
+    sigaction(SIGSEGV, &sa, NULL);
+    sigaction(SIGILL,  &sa, NULL);
+    sigaction(SIGABRT, &sa, NULL);
+}
+
 NPError
 NP_Initialize(NPNetscapeFuncs *aNPNFuncs, NPPluginFuncs *aNPPFuncs)
 {
@@ -411,6 +455,8 @@ NP_Initialize(NPNetscapeFuncs *aNPNFuncs, NPPluginFuncs *aNPPFuncs)
     }
 
     np_initialize_was_called = 1;
+
+    setup_sig_handlers();
 
     // set logging-only error handler.
     // Ignore a previous one, we have no plans to restore it
@@ -447,15 +493,15 @@ NP_Initialize(NPNetscapeFuncs *aNPNFuncs, NPPluginFuncs *aNPPFuncs)
 
     memcpy(aNPPFuncs, &pf, pf.size);
 
-    if (tables_open_display() != 0)
-        return NPERR_GENERIC_ERROR;
-
     if (aNPNFuncs->version < NPVERS_HAS_PLUGIN_THREAD_ASYNC_CALL) {
         config.quirks.plugin_missing = 1;
         config.quirks.incompatible_npapi_version = 1;
     }
 
     load_ppp_module();
+
+    if (tables_open_display() != 0)
+        return NPERR_GENERIC_ERROR;
 
     int res = call_plugin_init_module();
     if (res != 0) {
@@ -466,7 +512,6 @@ NP_Initialize(NPNetscapeFuncs *aNPNFuncs, NPPluginFuncs *aNPPFuncs)
     return NPERR_NO_ERROR;
 }
 
-__attribute__((visibility("default")))
 NPError
 NP_Shutdown(void)
 {

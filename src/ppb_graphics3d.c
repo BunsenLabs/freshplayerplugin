@@ -26,6 +26,7 @@
 #include <assert.h>
 #include <pthread.h>
 #include "ppb_graphics3d.h"
+#include "ppb_message_loop.h"
 #include <stdlib.h>
 #include <GL/glx.h>
 #include <GLES2/gl2.h>
@@ -264,7 +265,8 @@ ppb_graphics3d_create(PP_Instance instance, PP_Resource share_context, const int
     }
 
     XFlush(display.x);
-    g3d->xr_pict = XRenderCreatePicture(display.x, g3d->pixmap, g3d->xr_pictfmt, 0, 0);
+    if (display.have_xrender)
+        g3d->xr_pict = XRenderCreatePicture(display.x, g3d->pixmap, g3d->xr_pictfmt, 0, 0);
 
     int ret = glXMakeCurrent(display.x, g3d->glx_pixmap, g3d->glc);
     if (!ret) {
@@ -305,7 +307,8 @@ ppb_graphics3d_destroy(void *p)
     glXMakeCurrent(display.x, None, NULL);
 
     glXDestroyPixmap(display.x, g3d->glx_pixmap);
-    XRenderFreePicture(display.x, g3d->xr_pict);
+    if (display.have_xrender)
+        XRenderFreePicture(display.x, g3d->xr_pict);
     XFreePixmap(display.x, g3d->pixmap);
 
     glXDestroyContext(display.x, g3d->glc);
@@ -364,7 +367,8 @@ ppb_graphics3d_resize_buffers(PP_Resource context, int32_t width, int32_t height
                                 g3d->depth);
     g3d->glx_pixmap = glXCreatePixmap(display.x, g3d->fb_config, g3d->pixmap, NULL);
     XFlush(display.x);
-    g3d->xr_pict = XRenderCreatePicture(display.x, g3d->pixmap, g3d->xr_pictfmt, 0, 0);
+    if (display.have_xrender)
+        g3d->xr_pict = XRenderCreatePicture(display.x, g3d->pixmap, g3d->xr_pictfmt, 0, 0);
 
     // make new g3d->glx_pixmap current to the current thread to allow releasing old_glx_pixmap
     glXMakeCurrent(display.x, g3d->glx_pixmap, g3d->glc);
@@ -375,7 +379,8 @@ ppb_graphics3d_resize_buffers(PP_Resource context, int32_t width, int32_t height
 
     // destroy previous glx and x pixmaps
     glXDestroyPixmap(display.x, old_glx_pixmap);
-    XRenderFreePicture(display.x, old_pict);
+    if (display.have_xrender)
+        XRenderFreePicture(display.x, old_pict);
     XFreePixmap(display.x, old_pixmap);
 
     pthread_mutex_unlock(&display.lock);
@@ -447,6 +452,7 @@ ppb_graphics3d_swap_buffers(PP_Resource context, struct PP_CompletionCallback ca
     pp_resource_release(context);
 
     pp_i->graphics_ccb = callback;
+    pp_i->graphics_ccb_ml = ppb_message_loop_get_current();
     pp_i->graphics_in_progress = 1;
     pthread_mutex_unlock(&display.lock);
 

@@ -1,22 +1,44 @@
 Source: freshplayerplugin
-Section: contrib/web
-Priority: optional
 Maintainer: Vincent Danjean <vdanjean@debian.org>
-Build-Depends: debhelper (>= 9), cmake,
- pkg-config, libglib2.0-dev, libasound2-dev, libx11-dev, libgl1-mesa-dev,
- liburiparser-dev, libcairo2-dev, libpango1.0-dev, libpangocairo-1.0-0,
- libpangoft2-1.0-0, libfreetype6-dev, libgtk2.0-dev, libxinerama-dev,
- libconfig-dev, libevent-dev, libegl1-mesa-dev, libgles2-mesa-dev, ragel,
- libssl-dev, libv4l-dev,
- libpulse-dev, libavcodec-dev, libavutil-dev, libva-dev, libvdpau-dev
-Standards-Version: 3.9.6
-Homepage: https://github.com/i-rinat/freshplayerplugin
-Vcs-Git: git://anonscm.debian.org/collab-maint/freshplayerplugin.git
+Section: contrib/web
+XS-Autobuild: yes
+Priority: optional
+Build-Depends: debhelper (>= 9),
+               cmake,
+               pkg-config,
+               libglib2.0-dev,
+               libasound2-dev,
+               libx11-dev,
+               libgl1-mesa-dev,
+               liburiparser-dev,
+               libcairo2-dev,
+               libpango1.0-dev,
+               libpangocairo-1.0-0,
+               libpangoft2-1.0-0,
+               libfreetype6-dev,
+               libgtk2.0-dev,
+               libxinerama-dev,
+               libconfig-dev,
+               libevent-dev,
+               libegl1-mesa-dev,
+               libgles2-mesa-dev,
+               ragel,
+               libssl-dev,
+               libv4l-dev,
+               libpulse-dev,
+               libavcodec-dev,
+               libavutil-dev,
+               libva-dev,
+               libvdpau-dev
+Standards-Version: 3.9.7
 Vcs-Browser: https://anonscm.debian.org/gitweb/?p=collab-maint/freshplayerplugin.git
+Vcs-Git: https://anonscm.debian.org/collab-maint/freshplayerplugin.git
+Homepage: https://github.com/i-rinat/freshplayerplugin
 
 Package: browser-plugin-freshplayer-pepperflash
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}
+Depends: ${shlibs:Depends},
+         ${misc:Depends}
 Recommends: pepperflashplugin-nonfree
 Description: PPAPI-host NPAPI-plugin adapter for pepperflash
  The main goal of the project is to get PPAPI (Chrome) plugins
@@ -39,7 +61,8 @@ Description: PPAPI-host NPAPI-plugin adapter for pepperflash
 
 Package: browser-plugin-freshplayer-libpdf
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}
+Depends: ${shlibs:Depends},
+         ${misc:Depends}
 Description: PPAPI-host NPAPI-plugin adapter for libpdf.so from Chrome
  The main goal of the project is to get PPAPI (Chrome) plugins
  working in Firefox (and any other web-browser supporting NPAPI plugins).
@@ -57,7 +80,8 @@ Description: PPAPI-host NPAPI-plugin adapter for libpdf.so from Chrome
 
 Package: browser-plugin-freshplayer-nacl
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}
+Depends: ${shlibs:Depends},
+         ${misc:Depends}
 Description: PPAPI-host NPAPI-plugin adapter for Native Client from Chrome
  The main goal of the project is to get PPAPI (Chrome) plugins
  working in Firefox (and any other web-browser supporting NPAPI plugins).
