@@ -6,7 +6,7 @@ case "$1" in
         update-alternatives --install \
 	/usr/lib/mozilla/plugins/flash-mozilla.so \
         flash-mozilla.so \
-        /usr/lib/browser-plugin-freshplayer-pepperflash/libfreshwrapper-pepperflash.so \
+        /usr/lib/browser-plugin-freshplayer-pepperflash/libfreshwrapper-flashplayer.so \
         70
         ;;
 
