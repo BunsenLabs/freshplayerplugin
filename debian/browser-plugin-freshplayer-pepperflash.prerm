@@ -1,0 +1,23 @@
+#! /bin/sh -e
+
+case "$1" in
+    remove|deconfigure)
+        update-alternatives --remove \
+        flash-mozilla.so \
+        /usr/lib/browser-plugin-freshplayer-pepperflash/libfreshwrapper-pepperflash.so \
+        ;;
+
+        failed-upgrade)
+        ;;
+        
+        upgrade)
+        ;;
+
+        *)
+        echo "prerm called with unknown argument \`$1'" >&2
+        exit 1
+        ;;
+esac
+
+#DEBHELPER#
+
