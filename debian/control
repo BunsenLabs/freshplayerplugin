@@ -11,7 +11,7 @@ Build-Depends: debhelper (>= 9), cmake,
  libpulse-dev, libavcodec-dev, libavutil-dev, libva-dev, libvdpau-dev
 Standards-Version: 3.9.6
 Homepage: https://github.com/i-rinat/freshplayerplugin
-Vcs-Git: git://anonscm.debian.org/collab-maint/freshplayerplugin.git
+Vcs-Git: https://anonscm.debian.org/collab-maint/freshplayerplugin.git
 Vcs-Browser: https://anonscm.debian.org/gitweb/?p=collab-maint/freshplayerplugin.git
 
 Package: browser-plugin-freshplayer-pepperflash
