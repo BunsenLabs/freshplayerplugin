@@ -32,6 +32,7 @@
 #include "config.h"
 #include "pp_resource.h"
 #include "pp_interface.h"
+#include "ppb_message_loop.h"
 
 
 struct g2d_paint_task_s {
@@ -84,7 +85,7 @@ ppb_graphics2d_create(PP_Instance instance, const struct PP_Size *size, PP_Bool 
                             CAIRO_FORMAT_ARGB32, g2d->width, g2d->height, g2d->stride);
     g2d->task_list = NULL;
 
-    if (pp_i->is_transparent) {
+    if (pp_i->is_transparent && display.have_xrender) {
         // we need XRender picture (which in turn requires X Pixmap) to alpha blend
         // our images with existing pixmap provided by the browser. This is only needed
         // is instance is transparent, therefore depth is always 32-bit.
@@ -97,6 +98,8 @@ ppb_graphics2d_create(PP_Instance instance, const struct PP_Size *size, PP_Bool 
         XFlush(display.x);
         pthread_mutex_unlock(&display.lock);
     }
+
+    // without XRender, fall back to software compositing
 
     pp_resource_release(graphics_2d);
     return graphics_2d;
@@ -116,7 +119,7 @@ ppb_graphics2d_destroy(void *p)
         g2d->cairo_surf = NULL;
     }
 
-    if (g2d->instance->is_transparent) {
+    if (g2d->instance->is_transparent && display.have_xrender) {
         pthread_mutex_lock(&display.lock);
         XRenderFreePicture(display.x, g2d->xr_pict);
         XFreePixmap(display.x, g2d->pixmap);
@@ -241,6 +244,7 @@ ppb_graphics2d_flush(PP_Resource graphics_2d, struct PP_CompletionCallback callb
 
     if (pp_i->graphics == graphics_2d) {
         pp_i->graphics_ccb = callback;
+        pp_i->graphics_ccb_ml = ppb_message_loop_get_current();
         pp_i->graphics_in_progress = 1;
     }
     pthread_mutex_unlock(&display.lock);
@@ -325,7 +329,8 @@ ppb_graphics2d_flush(PP_Resource graphics_2d, struct PP_CompletionCallback callb
     if (callback.func) {
         // invoke callback as soon as possible if graphics device is not bound to an instance
         if (pp_i->graphics != graphics_2d)
-            ppb_core_call_on_main_thread2(0, callback, PP_OK, __func__);
+            ppb_message_loop_post_work_with_result(ppb_message_loop_get_current(), callback, 0,
+                                                   PP_OK, 0, __func__);
         return PP_OK_COMPLETIONPENDING;
     }
 

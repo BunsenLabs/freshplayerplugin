@@ -64,11 +64,19 @@ Project is using cmake (>=2.8.8) build system.
 
 * Install prerequisites.
 ```
+    Debian/Ubuntu:
     $ sudo apt-get install cmake gcc g++ pkg-config ragel libasound2-dev \
-           libssl-dev libglib2.0-dev libconfig-dev libpango1.0-dev       \
-           libgl1-mesa-dev libevent-dev libgtk2.0-dev libxrandr-dev      \
-           libxrender-dev libxcursor-dev libv4l-dev libgles2-mesa-dev    \
-           libavcodec-dev libva-dev libvdpau-dev libdrm-dev
+           libssl-dev libglib2.0-dev libpango1.0-dev libgl1-mesa-dev     \
+           libevent-dev libgtk2.0-dev libxrandr-dev libxrender-dev       \
+           libxcursor-dev libv4l-dev libgles2-mesa-dev libavcodec-dev    \
+           libva-dev libvdpau-dev libdrm-dev
+    Fedora:
+    $ sudo dnf install cmake gcc gcc-c++ pkgconfig ragel alsa-lib-devel openssl-devel \
+           glib2-devel pango-devel mesa-libGL-devel libevent-devel gtk2-devel         \
+           libXrandr-devel libXrender-devel libXcursor-devel libv4l-devel             \
+           mesa-libGLES-devel  ffmpeg-devel libva-devel libvdpau-devel libdrm-devel   \
+           pulseaudio-libs-devel
+
 ```
 * (optional) To enable PulseAudio support, install `libpulse-dev`.
 * (optional) To enable JACK support, install `libjack-jackd2-dev` and `libsoxr-dev`
@@ -79,8 +87,15 @@ Project is using cmake (>=2.8.8) build system.
     $ make
 ```
 
-* Put generated `libfreshwrapper-pepperflash.so` into browser plugins directory (`~/.mozilla/plugins`)
+* Put generated `libfreshwrapper-flashplayer.so` into browser plugins directory (`~/.mozilla/plugins`)
+  or install system-wide by calling:
+```
+    # make install
+```
 
+By default `make install` will put plugin(s) to `${CMAKE_INSTALL_PREFIX}/lib${LIB_SUFFIX}/mozilla/plugins`. The
+path could be changed either by changing CMake parameter `CMAKE_INSTALL_PREFIX`, or by setting
+`MOZPLUGIN_INSTALL_DIR`.
 
 When loaded by browser it will search for `libpepflashplayer.so` in a directories
 where it can be: in Chrome (stable/beta/unstable) directory, and in

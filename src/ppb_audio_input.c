@@ -32,6 +32,7 @@
 #include "pp_interface.h"
 #include "trace.h"
 #include "tables.h"
+#include "ppb_message_loop.h"
 
 
 PP_Resource
@@ -96,7 +97,8 @@ ppb_audio_input_enumerate_devices(PP_Resource audio_input, struct PP_ArrayOutput
     }
 
     audio_capture_device_list_free(list);
-    ppb_core_call_on_main_thread2(0, callback, PP_OK, __func__);
+    ppb_message_loop_post_work_with_result(ppb_message_loop_get_current(), callback, 0, PP_OK, 0,
+                                           __func__);
     pp_resource_release(audio_input);
     return PP_OK_COMPLETIONPENDING;
 }
@@ -161,7 +163,8 @@ do_ppb_audio_input_open(PP_Resource audio_input, PP_Resource device_ref, PP_Reso
         goto err_3;
     }
 
-    ppb_core_call_on_main_thread2(0, callback, PP_OK, __func__);
+    ppb_message_loop_post_work_with_result(ppb_message_loop_get_current(), callback, 0, PP_OK, 0,
+                                           __func__);
     retval = PP_OK_COMPLETIONPENDING;
 
 err_3:
@@ -277,7 +280,7 @@ int32_t
 trace_ppb_audio_input_enumerate_devices(PP_Resource audio_input, struct PP_ArrayOutput output,
                                         struct PP_CompletionCallback callback)
 {
-    trace_info("[PPB] {fake} %s audio_input=%d, output={.GetDataBuffer=%p, .user_data=%p}, "
+    trace_info("[PPB] {full} %s audio_input=%d, output={.GetDataBuffer=%p, .user_data=%p}, "
                "callback={.func=%p, .user_data=%p, .flags=%u}\n", __func__+6, audio_input,
                output.GetDataBuffer, output.user_data, callback.func, callback.user_data,
                callback.flags);

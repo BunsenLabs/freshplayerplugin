@@ -14,10 +14,6 @@
 #include "compiler/translator/Compiler.h"
 #include "compiler/translator/InitializeDll.h"
 #include "compiler/translator/length_limits.h"
-#ifdef ANGLE_ENABLE_HLSL
-#include "compiler/translator/TranslatorHLSL.h"
-#endif // ANGLE_ENABLE_HLSL
-#include "compiler/translator/VariablePacker.h"
 #include "angle_gl.h"
 
 namespace
@@ -39,53 +35,6 @@ bool isInitialized = false;
 // and the shading language compiler.
 //
 
-template <typename VarT>
-const std::vector<VarT> *GetVariableList(const TCompiler *compiler, ShaderVariableType variableType);
-
-template <>
-const std::vector<sh::Uniform> *GetVariableList(const TCompiler *compiler, ShaderVariableType)
-{
-    return &compiler->getUniforms();
-}
-
-template <>
-const std::vector<sh::Varying> *GetVariableList(const TCompiler *compiler, ShaderVariableType)
-{
-    return &compiler->getVaryings();
-}
-
-template <>
-const std::vector<sh::Attribute> *GetVariableList(const TCompiler *compiler, ShaderVariableType variableType)
-{
-    return (variableType == SHADERVAR_ATTRIBUTE ?
-        &compiler->getAttributes() :
-        &compiler->getOutputVariables());
-}
-
-template <>
-const std::vector<sh::InterfaceBlock> *GetVariableList(const TCompiler *compiler, ShaderVariableType)
-{
-    return &compiler->getInterfaceBlocks();
-}
-
-template <typename VarT>
-const std::vector<VarT> *GetShaderVariables(const ShHandle handle, ShaderVariableType variableType)
-{
-    if (!handle)
-    {
-        return NULL;
-    }
-
-    TShHandleBase* base = static_cast<TShHandleBase*>(handle);
-    TCompiler* compiler = base->getAsCompiler();
-    if (!compiler)
-    {
-        return NULL;
-    }
-
-    return GetVariableList<VarT>(compiler, variableType);
-}
-
 TCompiler *GetCompilerFromHandle(ShHandle handle)
 {
     if (!handle)
@@ -93,16 +42,6 @@ TCompiler *GetCompilerFromHandle(ShHandle handle)
     TShHandleBase *base = static_cast<TShHandleBase *>(handle);
     return base->getAsCompiler();
 }
-
-#ifdef ANGLE_ENABLE_HLSL
-TranslatorHLSL *GetTranslatorHLSLFromHandle(ShHandle handle)
-{
-    if (!handle)
-        return NULL;
-    TShHandleBase *base = static_cast<TShHandleBase *>(handle);
-    return base->getAsTranslatorHLSL();
-}
-#endif // ANGLE_ENABLE_HLSL
 
 }  // namespace anonymous
 
@@ -154,6 +93,7 @@ void ShInitBuiltInResources(ShBuiltInResources* resources)
     resources->OES_standard_derivatives = 0;
     resources->OES_EGL_image_external = 0;
     resources->ARB_texture_rectangle = 0;
+    resources->EXT_blend_func_extended      = 0;
     resources->EXT_draw_buffers = 0;
     resources->EXT_frag_depth = 0;
     resources->EXT_shader_texture_lod = 0;
@@ -173,10 +113,11 @@ void ShInitBuiltInResources(ShBuiltInResources* resources)
     resources->MinProgramTexelOffset = -8;
     resources->MaxProgramTexelOffset = 7;
 
+    // Extensions constants.
+    resources->MaxDualSourceDrawBuffers = 0;
+
     // Disable name hashing by default.
     resources->HashFunction = NULL;
-
-    resources->ArrayIndexClampingStrategy = SH_CLAMP_WITH_CLAMP_INTRINSIC;
 
     resources->MaxExpressionComplexity = 256;
     resources->MaxCallStackDepth = 256;
@@ -240,11 +181,11 @@ bool ShCompile(
     return compiler->compile(shaderStrings, numStrings, compileOptions);
 }
 
-int ShGetShaderVersion(const ShHandle handle)
+void ShClearResults(const ShHandle handle)
 {
-    TCompiler* compiler = GetCompilerFromHandle(handle);
+    TCompiler *compiler = GetCompilerFromHandle(handle);
     ASSERT(compiler);
-    return compiler->getShaderVersion();
+    compiler->clearResults();
 }
 
 ShShaderOutput ShGetShaderOutputType(const ShHandle handle)
@@ -252,18 +193,6 @@ ShShaderOutput ShGetShaderOutputType(const ShHandle handle)
     TCompiler* compiler = GetCompilerFromHandle(handle);
     ASSERT(compiler);
     return compiler->getOutputType();
-}
-
-//
-// Return any compiler log of messages for the application.
-//
-const std::string &ShGetInfoLog(const ShHandle handle)
-{
-    TCompiler *compiler = GetCompilerFromHandle(handle);
-    ASSERT(compiler);
-
-    TInfoSink &infoSink = compiler->getInfoSink();
-    return infoSink.info.str();
 }
 
 //
@@ -276,96 +205,4 @@ const std::string &ShGetObjectCode(const ShHandle handle)
 
     TInfoSink &infoSink = compiler->getInfoSink();
     return infoSink.obj.str();
-}
-
-const std::map<std::string, std::string> *ShGetNameHashingMap(
-    const ShHandle handle)
-{
-    TCompiler *compiler = GetCompilerFromHandle(handle);
-    ASSERT(compiler);
-    return &(compiler->getNameMap());
-}
-
-const std::vector<sh::Uniform> *ShGetUniforms(const ShHandle handle)
-{
-    return GetShaderVariables<sh::Uniform>(handle, SHADERVAR_UNIFORM);
-}
-
-const std::vector<sh::Varying> *ShGetVaryings(const ShHandle handle)
-{
-    return GetShaderVariables<sh::Varying>(handle, SHADERVAR_VARYING);
-}
-
-const std::vector<sh::Attribute> *ShGetAttributes(const ShHandle handle)
-{
-    return GetShaderVariables<sh::Attribute>(handle, SHADERVAR_ATTRIBUTE);
-}
-
-const std::vector<sh::Attribute> *ShGetOutputVariables(const ShHandle handle)
-{
-    return GetShaderVariables<sh::Attribute>(handle, SHADERVAR_OUTPUTVARIABLE);
-}
-
-const std::vector<sh::InterfaceBlock> *ShGetInterfaceBlocks(const ShHandle handle)
-{
-    return GetShaderVariables<sh::InterfaceBlock>(handle, SHADERVAR_INTERFACEBLOCK);
-}
-
-bool ShCheckVariablesWithinPackingLimits(
-    int maxVectors, ShVariableInfo *varInfoArray, size_t varInfoArraySize)
-{
-    if (varInfoArraySize == 0)
-        return true;
-    ASSERT(varInfoArray);
-    std::vector<sh::ShaderVariable> variables;
-    for (size_t ii = 0; ii < varInfoArraySize; ++ii)
-    {
-        sh::ShaderVariable var(varInfoArray[ii].type, varInfoArray[ii].size);
-        variables.push_back(var);
-    }
-    VariablePacker packer;
-    return packer.CheckVariablesWithinPackingLimits(maxVectors, variables);
-}
-
-bool ShGetInterfaceBlockRegister(const ShHandle handle,
-                                 const std::string &interfaceBlockName,
-                                 unsigned int *indexOut)
-{
-#ifdef ANGLE_ENABLE_HLSL
-    ASSERT(indexOut);
-
-    TranslatorHLSL *translator = GetTranslatorHLSLFromHandle(handle);
-    ASSERT(translator);
-
-    if (!translator->hasInterfaceBlock(interfaceBlockName))
-    {
-        return false;
-    }
-
-    *indexOut = translator->getInterfaceBlockRegister(interfaceBlockName);
-    return true;
-#else
-    return false;
-#endif // ANGLE_ENABLE_HLSL
-}
-
-bool ShGetUniformRegister(const ShHandle handle,
-                          const std::string &uniformName,
-                          unsigned int *indexOut)
-{
-#ifdef ANGLE_ENABLE_HLSL
-    ASSERT(indexOut);
-    TranslatorHLSL *translator = GetTranslatorHLSLFromHandle(handle);
-    ASSERT(translator);
-
-    if (!translator->hasUniform(uniformName))
-    {
-        return false;
-    }
-
-    *indexOut = translator->getUniformRegister(uniformName);
-    return true;
-#else
-    return false;
-#endif // ANGLE_ENABLE_HLSL
 }

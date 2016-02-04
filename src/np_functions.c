@@ -52,6 +52,7 @@
 #include "ppb_url_request_info.h"
 #include "ppb_var.h"
 #include "ppb_core.h"
+#include "ppb_cursor_control.h"
 #include "ppb_message_loop.h"
 #include "ppb_flash_fullscreen.h"
 #include "ppb_url_util.h"
@@ -90,8 +91,8 @@ set_window_comt(void *user_data, int32_t result)
 
     if (v) {
         pthread_mutex_lock(&display.lock);
-        v->rect.point.x = 0 / config.device_scale; // TODO: pp_i->x
-        v->rect.point.y = 0 / config.device_scale; // TODO: pp_i->y
+        v->rect.point.x = 0;
+        v->rect.point.y = 0;
         v->rect.size.width = pp_i->width / config.device_scale;
         v->rect.size.height = pp_i->height / config.device_scale;
         pp_resource_release(view);
@@ -100,74 +101,6 @@ set_window_comt(void *user_data, int32_t result)
         pp_i->ppp_instance_1_1->DidChangeView(pp_i->id, view);
         ppb_core_release_resource(view);
     }
-}
-
-static
-double
-get_double_value(NPVariant variant)
-{
-    switch (variant.type) {
-    case NPVariantType_Bool:    return !!variant.value.boolValue;
-    case NPVariantType_Int32:   return variant.value.intValue;
-    case NPVariantType_Double:  return variant.value.doubleValue;
-    default:                    return 0;
-    }
-}
-
-static
-void
-calculate_absolute_offset(NPP npp, struct pp_instance_s *pp_i)
-{
-    pp_i->offset_x = 0;
-    pp_i->offset_y = 0;
-
-    NPVariant bounding_rect;
-    if (!npn.invoke(npp, pp_i->np_plugin_element_obj,
-                    npn.getstringidentifier("getBoundingClientRect"), NULL, 0, &bounding_rect))
-    {
-        goto err_1;
-    }
-
-    if (bounding_rect.type != NPVariantType_Object)
-        goto err_1;
-
-    NPVariant element_x, element_y;
-    if (!npn.getproperty(npp, bounding_rect.value.objectValue, npn.getstringidentifier("left"),
-                         &element_x))
-    {
-        goto err_2;
-    }
-
-    if (!npn.getproperty(npp, bounding_rect.value.objectValue, npn.getstringidentifier("top"),
-                         &element_y))
-    {
-        goto err_3;
-    }
-
-    NPVariant viewport_x, viewport_y;
-    NPString script_get_x = NPString_literal(
-        "Math.round(window.devicePixelRatio * window.mozInnerScreenX) - window.screenX");
-    NPString script_get_y = NPString_literal(
-        "Math.round(window.devicePixelRatio * window.mozInnerScreenY) - window.screenY");
-    if (!npn.evaluate(npp, pp_i->np_window_obj, &script_get_x, &viewport_x))
-        goto err_4;
-    if (!npn.evaluate(npp, pp_i->np_window_obj, &script_get_y, &viewport_y))
-        goto err_5;
-
-    pp_i->offset_x = get_double_value(element_x) + get_double_value(viewport_x);
-    pp_i->offset_y = get_double_value(element_y) + get_double_value(viewport_y);
-
-    npn.releasevariantvalue(&viewport_y);
-err_5:
-    npn.releasevariantvalue(&viewport_x);
-err_4:
-    npn.releasevariantvalue(&element_y);
-err_3:
-    npn.releasevariantvalue(&element_x);
-err_2:
-    npn.releasevariantvalue(&bounding_rect);
-err_1:
-    return;
 }
 
 NPError
@@ -186,16 +119,23 @@ NPP_SetWindow(NPP npp, NPWindow *window)
         return NPERR_NO_ERROR;
     }
 
-    pp_i->wnd = (Window)window->window;
-    pp_i->width = window->width;
-    pp_i->height = window->height;
+    pp_i->wnd =     (Window)window->window;
+    pp_i->x =       window->x;
+    pp_i->y =       window->y;
+    pp_i->width =   window->width;
+    pp_i->height =  window->height;
+    pp_i->clip_rect.left =   window->clipRect.left;
+    pp_i->clip_rect.right =  window->clipRect.right;
+    pp_i->clip_rect.top =    window->clipRect.top;
+    pp_i->clip_rect.bottom = window->clipRect.bottom;
+
+    if (npn.getvalue(pp_i->npp, NPNVnetscapeWindow, &pp_i->browser_wnd) != NPERR_NO_ERROR)
+        pp_i->browser_wnd = None;
 
     if (pp_i->windowed_mode) {
         pp_i->wnd = x11et_register_window(pp_i->id, (Window)window->window, NPP_HandleEvent,
                                           pp_i->use_xembed);
     }
-
-    calculate_absolute_offset(npp, pp_i);
 
     pthread_mutex_lock(&display.lock);
     if (!pp_i->is_fullscreen) {
@@ -485,9 +425,6 @@ NPP_New(NPMIMEType pluginType, NPP npp, uint16_t mode, int16_t argc, char *argn[
     trace_info_f("[NPP] {full} %s pluginType=%s npp=%p, mode=%d, argc=%d, saved=%p\n", __func__,
                  pluginType, npp, mode, argc, saved);
 
-    struct pp_instance_s *pp_i;
-    struct PP_Var         instance_relative_url = PP_MakeUndefined();
-
     for (int k = 0; k < argc; k ++)
         trace_info_f("            argn[%d] = %s, argv[%d] = %s\n", k, argn[k], k, argv[k]);
 
@@ -502,6 +439,8 @@ NPP_New(NPMIMEType pluginType, NPP npp, uint16_t mode, int16_t argc, char *argn[
         trace_error("ppp_get_interface is NULL\n");
         return NPERR_MODULE_LOAD_FAILED_ERROR;
     }
+
+    struct pp_instance_s *pp_i;
 
     pp_i = calloc(sizeof(*pp_i), 1);
     npp->pdata = pp_i;
@@ -519,6 +458,8 @@ NPP_New(NPMIMEType pluginType, NPP npp, uint16_t mode, int16_t argc, char *argn[
     pp_i->argc = argc;
     pp_i->argn = malloc(argc * sizeof(char*));
     pp_i->argv = malloc(argc * sizeof(char*));
+
+    struct PP_Var instance_relative_url = PP_MakeUndefined();
     for (int k = 0; k < argc; k ++) {
         pp_i->argn[k] = strdup(argn[k] ? argn[k] : "");
         pp_i->argv[k] = strdup(argv[k] ? argv[k] : "");
@@ -588,9 +529,16 @@ NPP_New(NPMIMEType pluginType, NPP npp, uint16_t mode, int16_t argc, char *argn[
 
     pp_i->document_url = get_document_url(pp_i);
     pp_i->document_base_url = get_document_base_url(pp_i);
-    pp_i->instance_url = ppb_url_util_resolve_relative_to_url(pp_i->document_base_url,
-                                                              instance_relative_url, NULL);
-    ppb_var_release(instance_relative_url);
+
+    if (instance_relative_url.type == PP_VARTYPE_UNDEFINED) {
+        // there were no 'src' attribute, using document base url as an instance url
+        pp_i->instance_url = ppb_var_add_ref2(pp_i->document_base_url);
+    } else {
+        // resolve instance URL
+        pp_i->instance_url = ppb_url_util_resolve_relative_to_url(pp_i->document_base_url,
+                                                                  instance_relative_url, NULL);
+        ppb_var_release(instance_relative_url);
+    }
 
     // prepare GTK+ widget for catching keypress events returned by IME
     pp_i->catcher_widget = gtk_label_new("");
@@ -758,6 +706,7 @@ NPP_NewStream(NPP npp, NPMIMEType type, NPStream *stream, NPBool seekable, uint1
     }
 
     struct PP_CompletionCallback ccb = {};
+    PP_Resource ccb_ml = 0;
 
     stream->pdata = (void*)(size_t)loader;
     struct pp_url_loader_s *ul = pp_resource_acquire(loader, PP_RESOURCE_URL_LOADER);
@@ -765,6 +714,7 @@ NPP_NewStream(NPP npp, NPMIMEType type, NPStream *stream, NPBool seekable, uint1
     if (ul) {
         struct parsed_headers_s *ph = hp_parse_headers(stream->headers);
         ccb = ul->ccb;
+        ccb_ml = ul->ccb_ml;
         ul->ccb = PP_MakeCCB(NULL, NULL);  // prevent callback from being called twice
         ul->np_stream = stream;
 
@@ -818,7 +768,7 @@ NPP_NewStream(NPP npp, NPMIMEType type, NPStream *stream, NPBool seekable, uint1
 
 quit:
     if (ccb.func)
-        ppb_core_call_on_main_thread2(0, ccb, PP_OK, __func__);
+        ppb_message_loop_post_work_with_result(ccb_ml, ccb, 0, PP_OK, 0, __func__);
 
     return NPERR_NO_ERROR;
 }
@@ -889,16 +839,18 @@ NPP_DestroyStream(NPP npp, NPStream *stream, NPReason reason)
             ul->read_pos += read_bytes;
 
         pp_resource_release(loader);
-        ppb_core_call_on_main_thread2(0, PP_MakeCCB(url_read_task_wrapper_comt, rt), read_bytes,
-                                      __func__);
+        ppb_message_loop_post_work_with_result(rt->ccb_ml,
+                                               PP_MakeCCB(url_read_task_wrapper_comt, rt), 0,
+                                               read_bytes, 0, __func__);
         ul = pp_resource_acquire(loader, PP_RESOURCE_URL_LOADER);
     }
 
     if (ul && ul->stream_to_file) {
         struct PP_CompletionCallback ccb = ul->stream_to_file_ccb;
+        PP_Resource                  ccb_ml = ul->stream_to_file_ccb_ml;
 
         pp_resource_release(loader);
-        ppb_core_call_on_main_thread2(0, ccb, PP_OK, __func__);
+        ppb_message_loop_post_work_with_result(ccb_ml, ccb, 0, PP_OK, 0, __func__);
         return NPERR_NO_ERROR;
     }
 
@@ -964,8 +916,9 @@ NPP_Write(NPP npp, NPStream *stream, int32_t offset, int32_t len, void *buffer)
 
     if (read_bytes > 0) {
         pp_resource_release(loader);
-        ppb_core_call_on_main_thread2(0, PP_MakeCCB(url_read_task_wrapper_comt, rt), read_bytes,
-                                      __func__);
+        ppb_message_loop_post_work_with_result(rt->ccb_ml,
+                                               PP_MakeCCB(url_read_task_wrapper_comt, rt), 0,
+                                               read_bytes, 0, __func__);
         return len;
     } else {
         // reschedule task
@@ -990,6 +943,110 @@ NPP_Print(NPP npp, NPPrint *platformPrint)
 }
 
 static
+void
+graphics_ccb_wrapper_comt(void *user_data, int32_t result)
+{
+    PP_Instance instance = GPOINTER_TO_SIZE(user_data);
+    struct pp_instance_s *pp_i = tables_get_pp_instance(instance);
+    if (!pp_i)
+        return;
+
+    pthread_mutex_lock(&display.lock);
+    struct PP_CompletionCallback ccb = pp_i->graphics_ccb;
+    pp_i->graphics_ccb = PP_MakeCCB(NULL, NULL);
+    pp_i->graphics_in_progress = 0;
+    pthread_mutex_unlock(&display.lock);
+
+    if (ccb.func)
+        ccb.func(ccb.user_data, result);
+}
+
+static
+void
+draw_drawable_on_drawable(Display *dpy, int screen, int is_transparent, Drawable src,
+                          int32_t source_x, int32_t source_y, Drawable dst, int32_t target_x,
+                          int32_t target_y, int32_t target_width, int32_t target_height)
+{
+    XVisualInfo vi_src, vi_dst;
+    struct {
+        Window root;
+        int x, y;
+        unsigned int width, height, border, depth;
+    } d_src = {}, d_dst = {};
+
+    XGetGeometry(dpy, src, &d_src.root, &d_src.x, &d_src.y, &d_src.width, &d_src.height,
+                 &d_src.border, &d_src.depth);
+    XGetGeometry(dpy, dst, &d_dst.root, &d_dst.x, &d_dst.y, &d_dst.width, &d_dst.height,
+                 &d_dst.border, &d_dst.depth);
+
+    if (!XMatchVisualInfo(dpy, screen, d_src.depth, TrueColor, &vi_src) ||
+        !XMatchVisualInfo(dpy, screen, d_dst.depth, TrueColor, &vi_dst))
+    {
+        static int reported = 0;
+        if (!reported)
+            trace_error("%s, can't find visual\n", __func__);
+        reported = 1;
+        return;
+    }
+
+    cairo_surface_t *src_surf, *dst_surf;
+
+    dst_surf = cairo_xlib_surface_create(dpy, dst, vi_dst.visual, d_dst.width, d_dst.height);
+    src_surf = cairo_xlib_surface_create(dpy, src, vi_src.visual, d_src.width, d_src.height);
+
+    cairo_t *cr = cairo_create(dst_surf);
+
+    cairo_set_source_surface(cr, src_surf, target_x - source_x, target_y - source_y);
+    cairo_set_operator(cr, is_transparent ? CAIRO_OPERATOR_OVER
+                                          : CAIRO_OPERATOR_SOURCE);
+    cairo_rectangle(cr, target_x, target_y, target_width, target_height);
+    cairo_fill(cr);
+    cairo_destroy(cr);
+    cairo_surface_destroy(dst_surf);
+    cairo_surface_destroy(src_surf);
+}
+
+static
+void
+draw_argb32_on_drawable(Display *dpy, int screen, int is_transparent, char *data, int32_t width,
+                        int32_t height, int32_t stride, int32_t source_x, int32_t source_y,
+                        Drawable drawable, int32_t target_x, int32_t target_y, int32_t target_width,
+                        int32_t target_height)
+{
+    XVisualInfo vi;
+    struct {
+        Window root;
+        int x, y;
+        unsigned int width, height, border, depth;
+    } d = {};
+
+    XGetGeometry(dpy, drawable, &d.root, &d.x, &d.y, &d.width, &d.height, &d.border, &d.depth);
+    if (!XMatchVisualInfo(dpy, screen, d.depth, TrueColor, &vi)) {
+        static int reported = 0;
+        if (!reported)
+            trace_error("%s, can't find visual\n", __func__);
+        reported = 1;
+        return;
+    }
+
+    cairo_surface_t *src_surf, *dst_surf;
+
+    dst_surf = cairo_xlib_surface_create(dpy, drawable, vi.visual, d.width, d.height);
+    src_surf = cairo_image_surface_create_for_data((unsigned char *)data, CAIRO_FORMAT_ARGB32,
+                                                   width, height, stride);
+    cairo_t *cr = cairo_create(dst_surf);
+
+    cairo_set_source_surface(cr, src_surf, target_x - source_x, target_y - source_y);
+    cairo_set_operator(cr, is_transparent ? CAIRO_OPERATOR_OVER
+                                          : CAIRO_OPERATOR_SOURCE);
+    cairo_rectangle(cr, target_x, target_y, target_width, target_height);
+    cairo_fill(cr);
+    cairo_destroy(cr);
+    cairo_surface_destroy(dst_surf);
+    cairo_surface_destroy(src_surf);
+}
+
+static
 int16_t
 handle_graphics_expose_event(NPP npp, void *event)
 {
@@ -1001,6 +1058,25 @@ handle_graphics_expose_event(NPP npp, void *event)
     Drawable drawable = ev->drawable;
     int screen = DefaultScreen(dpy);
     int retval;
+
+    if (pp_i->windowed_mode && pp_i->browser_wnd != None) {
+        int wnd_x, wnd_y;
+        int browser_x, browser_y;
+        Window child;
+
+        pthread_mutex_lock(&display.lock);
+        XTranslateCoordinates(dpy, (Window)drawable, DefaultRootWindow(dpy), 0, 0,
+                              &wnd_x, &wnd_y, &child);
+        XTranslateCoordinates(dpy, pp_i->browser_wnd, DefaultRootWindow(dpy), 0, 0,
+                              &browser_x, &browser_y, &child);
+        pthread_mutex_unlock(&display.lock);
+
+        pp_i->offset_x = wnd_x - browser_x;
+        pp_i->offset_y = wnd_y - browser_y;
+    }
+
+    const int32_t source_x = pp_i->windowed_mode ? 0 : pp_i->clip_rect.left - pp_i->x;
+    const int32_t source_y = pp_i->windowed_mode ? 0 : pp_i->clip_rect.top - pp_i->y;
 
     pthread_mutex_lock(&display.lock);
     if (g2d) {
@@ -1018,37 +1094,52 @@ handle_graphics_expose_event(NPP npp, void *event)
             trace_warning("%s, can't get visual for depth %d, using default\n", __func__, depth);
         }
 
-        XImage *xi = XCreateImage(dpy, visual, depth, ZPixmap, 0,
-                                  g2d->second_buffer, g2d->scaled_width, g2d->scaled_height, 32,
-                                  g2d->scaled_stride);
+        if (display.have_xrender) {
+            XImage *xi = XCreateImage(dpy, visual, depth, ZPixmap, 0,
+                                      g2d->second_buffer, g2d->scaled_width, g2d->scaled_height, 32,
+                                      g2d->scaled_stride);
+            XPutImage(dpy,
+                      pp_i->is_transparent ? g2d->pixmap : drawable,
+                      pp_i->is_transparent ? g2d->gc : DefaultGC(dpy, screen),
+                      xi, 0, 0, ev->x, ev->y,
+                      MIN(g2d->scaled_width, ev->width), MIN(g2d->scaled_height, ev->height));
 
-        XPutImage(dpy,
-                  pp_i->is_transparent ? g2d->pixmap : drawable,
-                  pp_i->is_transparent ? g2d->gc : DefaultGC(dpy, screen),
-                  xi, 0, 0, ev->x, ev->y,
-                  MIN(g2d->scaled_width, ev->width), MIN(g2d->scaled_height, ev->height));
+            if (pp_i->is_transparent) {
+                Picture dst_pict = XRenderCreatePicture(dpy, drawable, display.pictfmt_rgb24, 0, 0);
+                XRenderComposite(dpy, PictOpOver,
+                                 g2d->xr_pict, None, dst_pict,
+                                 ev->x, ev->y, 0, 0,
+                                 ev->x, ev->y, ev->width, ev->height);
+                XRenderFreePicture(dpy, dst_pict);
+            }
 
-        if (pp_i->is_transparent) {
-            Picture dst_pict = XRenderCreatePicture(dpy, drawable, display.pictfmt_rgb24, 0, 0);
-            XRenderComposite(dpy, PictOpOver,
-                             g2d->xr_pict, None, dst_pict,
-                             ev->x, ev->y, 0, 0,
-                             ev->x, ev->y, ev->width, ev->height);
-            XRenderFreePicture(dpy, dst_pict);
+            XFree(xi);
+
+        } else {
+            // software compositing fallback
+            draw_argb32_on_drawable(dpy, screen, pp_i->is_transparent, g2d->second_buffer,
+                                    g2d->scaled_width, g2d->scaled_height, g2d->scaled_stride,
+                                    source_x, source_y, drawable, ev->x, ev->y, ev->width,
+                                    ev->height);
         }
 
-        XFree(xi);
         XFlush(dpy);
 
     } else if (g3d) {
-        Picture dst_pict = XRenderCreatePicture(dpy, drawable, display.pictfmt_rgb24, 0, 0);
-        XRenderComposite(dpy,
-                         pp_i->is_transparent ? PictOpOver : PictOpSrc,
-                         g3d->xr_pict, None, dst_pict,
-                         ev->x, ev->y, 0, 0,
-                         ev->x, ev->y, ev->width, ev->height);
-        XRenderFreePicture(dpy, dst_pict);
-        XFlush(dpy);
+        if (display.have_xrender) {
+            Picture dst_pict = XRenderCreatePicture(dpy, drawable, display.pictfmt_rgb24, 0, 0);
+            XRenderComposite(dpy,
+                             pp_i->is_transparent ? PictOpOver : PictOpSrc,
+                             g3d->xr_pict, None, dst_pict,
+                             ev->x, ev->y, 0, 0,
+                             ev->x, ev->y, ev->width, ev->height);
+            XRenderFreePicture(dpy, dst_pict);
+            XFlush(dpy);
+        } else {
+            // software compositing fallback
+            draw_drawable_on_drawable(dpy, screen, pp_i->is_transparent, g3d->pixmap, source_x,
+                                      source_y, drawable, ev->x, ev->y, ev->width, ev->height);
+        }
     } else {
         retval = 0;
         goto done;
@@ -1057,11 +1148,12 @@ handle_graphics_expose_event(NPP npp, void *event)
     pp_resource_release(pp_i->graphics);
     if (pp_i->graphics_in_progress) {
         if (pp_i->graphics_ccb.func)
-            ppb_core_call_on_main_thread2(0, pp_i->graphics_ccb, PP_OK, __func__);
+            ppb_message_loop_post_work_with_result(pp_i->graphics_ccb_ml,
+                                                   PP_MakeCCB(graphics_ccb_wrapper_comt,
+                                                              GSIZE_TO_POINTER(pp_i->id)),
+                                                   0, PP_OK, 0, __func__);
     }
 
-    pp_i->graphics_ccb = PP_MakeCCB(NULL, NULL);
-    pp_i->graphics_in_progress = 0;
     retval = 1;
 
 done:
@@ -1215,6 +1307,13 @@ handle_enter_leave_event(NPP npp, void *event)
     XCrossingEvent *ev = event;
     struct pp_instance_s *pp_i = npp->pdata;
 
+    if (ev->type == LeaveNotify) {
+        g_atomic_int_set(&pp_i->cursor_inside_instance, 1);
+        ppb_cursor_control_set_cursor(pp_i->id, PP_CURSORTYPE_POINTER, 0, NULL);
+    }
+
+    g_atomic_int_set(&pp_i->cursor_inside_instance, ev->type == EnterNotify);
+
     // ignore NotifyGrab and NotifyUngrab
     if (ev->mode != NotifyNormal)
         return 0;
@@ -1235,7 +1334,7 @@ handle_enter_leave_event(NPP npp, void *event)
                                                               : PP_INPUTEVENT_TYPE_MOUSELEAVE;
     PP_Resource pp_event;
     pp_event = ppb_mouse_input_event_create(pp_i->id, event_type,
-                                            ev->time/1.0e6, mod, PP_INPUTEVENT_MOUSEBUTTON_NONE,
+                                            ev->time/1.0e3, mod, PP_INPUTEVENT_MOUSEBUTTON_NONE,
                                             &mouse_position, 0, &zero_point);
     ppp_handle_input_event_helper(pp_i, pp_event);
 
@@ -1264,7 +1363,7 @@ handle_motion_event(NPP npp, void *event)
     PP_Resource pp_event;
 
     pp_event = ppb_mouse_input_event_create(pp_i->id, PP_INPUTEVENT_TYPE_MOUSEMOVE,
-                                            ev->time/1.0e6, mod, PP_INPUTEVENT_MOUSEBUTTON_NONE,
+                                            ev->time/1.0e3, mod, PP_INPUTEVENT_MOUSEBUTTON_NONE,
                                             &mouse_position, 0, &zero_point);
     ppp_handle_input_event_helper(pp_i, pp_event);
     return 1;
@@ -1322,10 +1421,6 @@ handle_button_press_release_event(NPP npp, void *event)
         break;
     }
 
-    // TODO: Firefox does not pass wheel event to windowless plugins.
-    //       Only windowed plugins can receive such events.
-
-
     const uint32_t combined_mask = pp_i->event_mask | pp_i->filtered_event_mask;
     if (!(event_class & combined_mask))
         return 0;
@@ -1333,19 +1428,27 @@ handle_button_press_release_event(NPP npp, void *event)
     if (event_class == PP_INPUTEVENT_CLASS_MOUSE) {
         PP_Resource         pp_event;
         PP_InputEvent_Type  event_type;
+        int                 click_count = 1;
 
         event_type = (ev->type == ButtonPress) ? PP_INPUTEVENT_TYPE_MOUSEDOWN
                                                : PP_INPUTEVENT_TYPE_MOUSEUP;
+
+        if (ev->time - pp_i->last_button_release_timestamp < config.double_click_delay_ms)
+            click_count = 2;
+
         pp_event = ppb_mouse_input_event_create(pp_i->id, event_type,
-                                                ev->time/1.0e6, mod, mouse_button,
-                                                &mouse_position, 1, &zero_point);
+                                                ev->time/1.0e3, mod, mouse_button,
+                                                &mouse_position, click_count, &zero_point);
         ppp_handle_input_event_helper(pp_i, pp_event);
+
+        if (ev->type == ButtonRelease)
+            pp_i->last_button_release_timestamp = ev->time;
 
         // context menu event
         if (ev->type == ButtonRelease && ev_button == 3) {
             pp_event = ppb_mouse_input_event_create(pp_i->id,
                                                     PP_INPUTEVENT_TYPE_CONTEXTMENU,
-                                                    ev->time/1.0e6, mod, mouse_button,
+                                                    ev->time/1.0e3, mod, mouse_button,
                                                     &mouse_position, 1, &zero_point);
             ppp_handle_input_event_helper(pp_i, pp_event);
         }
@@ -1356,7 +1459,7 @@ handle_button_press_release_event(NPP npp, void *event)
                                                  .y = wheel_y * scroll_by_tick };
             struct PP_FloatPoint wheel_ticks = { .x = wheel_x, .y = wheel_y };
 
-            PP_Resource pp_event = ppb_wheel_input_event_create(pp_i->id, ev->time/1.0e6, mod,
+            PP_Resource pp_event = ppb_wheel_input_event_create(pp_i->id, ev->time/1.0e3, mod,
                                                                 &wheel_delta, &wheel_ticks,
                                                                 PP_FALSE);
             ppp_handle_input_event_helper(pp_i, pp_event);
@@ -1495,14 +1598,14 @@ handle_key_press_release_event(NPP npp, void *event)
     event_type = (ev->type == KeyPress) ? PP_INPUTEVENT_TYPE_KEYDOWN
                                         : PP_INPUTEVENT_TYPE_KEYUP;
 
-    pp_event = ppb_keyboard_input_event_create_1_0(pp_i->id, event_type, ev->time/1.0e6,
+    pp_event = ppb_keyboard_input_event_create_1_0(pp_i->id, event_type, ev->time/1.0e3,
                                                    mod, pp_keycode, PP_MakeUndefined());
     ppp_handle_input_event_helper(pp_i, pp_event);
 
     if (ev->type == KeyPress && is_printable_sequence(buffer, charcount)) {
         struct PP_Var character_text = ppb_var_var_from_utf8(buffer, charcount);
         pp_event = ppb_keyboard_input_event_create_1_0(
-                        pp_i->id, PP_INPUTEVENT_TYPE_CHAR, ev->time/1.0e6, mod,
+                        pp_i->id, PP_INPUTEVENT_TYPE_CHAR, ev->time/1.0e3, mod,
                         pp_keycode, character_text);
         ppb_var_release(character_text);
 
@@ -1640,20 +1743,23 @@ NPP_URLNotify(NPP npp, const char *url, NPReason reason, void *notifyData)
         return;
 
     struct PP_CompletionCallback ccb = ul->ccb;
+    PP_Resource                  ccb_ml = ul->ccb_ml;
     ul->ccb = PP_MakeCCB(NULL, NULL); // prevent callback from being called twice
     pp_resource_release(url_loader);
 
     // notify plugin that download have failed
     if (ccb.func)
-        ppb_core_call_on_main_thread2(0, ccb, PP_ERROR_FAILED, __func__);
+        ppb_message_loop_post_work_with_result(ccb_ml, ccb, 0, PP_ERROR_FAILED, 0, __func__);
 }
 
 NPError
 NPP_GetValue(NPP npp, NPPVariable variable, void *value)
 {
+    int status = NPERR_INVALID_PARAM;
     struct pp_instance_s *pp_i = npp->pdata;
+
     if (config.quirks.plugin_missing)
-        return NPERR_NO_ERROR;
+        return NPERR_INVALID_PARAM;
 
     const char *var_name = reverse_npp_variable(variable);
 
@@ -1694,6 +1800,7 @@ NPP_GetValue(NPP npp, NPPVariable variable, void *value)
     case NPPVpluginNeedsXEmbed:
         trace_info_f("[NPP] {full} %s npp=%p, variable=%s\n", __func__, npp, var_name);
         *(NPBool *)value = pp_i->use_xembed;
+        status = NPERR_NO_ERROR;
         break;
     case NPPVpluginScriptableNPObject:
         trace_info_f("[NPP] {full} %s npp=%p, variable=%s\n", __func__, npp, var_name);
@@ -1703,6 +1810,7 @@ NPP_GetValue(NPP npp, NPPVariable variable, void *value)
             *(void **)value = np_var.value.objectValue;
             tables_add_npobj_npp_mapping(np_var.value.objectValue, npp);
         } while (0);
+        status = NPERR_NO_ERROR;
         break;
     case NPPVformValue:
         trace_info_z("[NPP] {zilch} %s npp=%p, variable=%s\n", __func__, npp, var_name);
@@ -1713,6 +1821,7 @@ NPP_GetValue(NPP npp, NPPVariable variable, void *value)
     case NPPVpluginWantsAllNetworkStreams:
         trace_info_f("[NPP] {full} %s npp=%p, variable=%s\n", __func__, npp, var_name);
         *(int *)value = 1;
+        status = NPERR_NO_ERROR;
         break;
     case NPPVpluginNativeAccessibleAtkPlugId:
         trace_info_z("[NPP] {zilch} %s npp=%p, variable=%s\n", __func__, npp, var_name);
@@ -1734,7 +1843,7 @@ NPP_GetValue(NPP npp, NPPVariable variable, void *value)
         break;
     }
 
-    return NPERR_NO_ERROR;
+    return status;
 }
 
 NPError

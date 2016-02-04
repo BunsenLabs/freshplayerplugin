@@ -7,14 +7,12 @@
 #include "compiler/translator/OutputGLSL.h"
 
 TOutputGLSL::TOutputGLSL(TInfoSinkBase& objSink,
-                         ShArrayIndexClampingStrategy clampingStrategy,
                          ShHashFunction64 hashFunction,
                          NameMap& nameMap,
                          TSymbolTable& symbolTable,
                          int shaderVersion,
                          ShShaderOutput output)
     : TOutputGLSLBase(objSink,
-                      clampingStrategy,
                       hashFunction,
                       nameMap,
                       symbolTable,
@@ -37,13 +35,13 @@ void TOutputGLSL::visitSymbol(TIntermSymbol *node)
     {
         out << "gl_FragDepth";
     }
-    else if (symbol == "gl_FragColor" && IsGLSL130OrNewer(getShaderOutput()))
+    else if (symbol == "gl_SecondaryFragColorEXT")
     {
-        out << "webgl_FragColor";
+        out << "angle_SecondaryFragColor";
     }
-    else if (symbol == "gl_FragData" && IsGLSL130OrNewer(getShaderOutput()))
+    else if (symbol == "gl_SecondaryFragDataEXT")
     {
-        out << "webgl_FragData";
+        out << "angle_SecondaryFragData";
     }
     else
     {
@@ -62,24 +60,7 @@ TString TOutputGLSL::translateTextureFunction(TString &name)
         "textureCubeGradEXT", "textureCubeGradARB",
         NULL, NULL
     };
-    static const char *legacyToCoreRename[] = {
-        "texture2D", "texture",
-        "texture2DProj", "textureProj",
-        "texture2DLod", "textureLod",
-        "texture2DProjLod", "textureProjLod",
-        "textureCube", "texture",
-        "textureCubeLod", "textureLod",
-        // Extensions
-        "texture2DLodEXT", "textureLod",
-        "texture2DProjLodEXT", "textureProjLod",
-        "textureCubeLodEXT", "textureLod",
-        "texture2DGradEXT", "textureGrad",
-        "texture2DProjGradEXT", "textureProjGrad",
-        "textureCubeGradEXT", "textureGrad",
-        NULL, NULL
-    };
-    const char **mapping = (IsGLSL130OrNewer(getShaderOutput())) ?
-        legacyToCoreRename : simpleRename;
+    const char **mapping = simpleRename;
 
     for (int i = 0; mapping[i] != NULL; i += 2)
     {

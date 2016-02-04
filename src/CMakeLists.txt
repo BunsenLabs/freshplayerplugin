@@ -5,7 +5,10 @@ endif()
 
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
+set(MOZPLUGIN_INSTALL_DIR "lib${LIB_SUFFIX}/mozilla/plugins/" CACHE PATH "plugin install directory")
+
 add_subdirectory(uri_parser)
+add_subdirectory(config_parser)
 
 include_directories("${GENERATED_INCLUDE_DIRS}")
 
@@ -13,6 +16,7 @@ set(source_list
     async_network.c
     audio_thread.c
     audio_thread_alsa.c
+    audio_thread_noaudio.c
     config.c
     compat.c
     font.c
@@ -24,6 +28,7 @@ set(source_list
     reverse_constant.c
     tables.c
     trace.c
+    trace_core.c
     n2p_proxy_class.c
     p2n_proxy_class.c
     pp_interface.c
@@ -64,7 +69,6 @@ set(source_list
     ppb_opengles2.c
     ppb_pdf.c
     ppb_printing.c
-    ppb_scrollbar.c
     ppb_tcp_socket.c
     ppb_text_input_controller.c
     ppb_text_input.c
@@ -77,9 +81,7 @@ set(source_list
     ppb_var.c
     ppb_video_capture.c
     ppb_view.c
-    ppb_widget.c
     ppb_x509_certificate.c
-    ppb_zoom.c
     screensaver_control.c
     x11_event_thread.c
 )
@@ -103,8 +105,11 @@ else()
     add_definitions(-DHAVE_HWDEC=0)
 endif()
 
+add_executable(link_check link_check.c)
+target_link_libraries(link_check ${REQ_LIBRARIES})
+
 add_library(freshwrapper-obj OBJECT ${source_list})
-add_dependencies(freshwrapper-obj img-resources)
+add_dependencies(freshwrapper-obj link_check)
 
 # ensure libfreshwrapper-*.so are linked with all libraries they use
 add_executable(dep_check dep_check.c)
@@ -114,28 +119,43 @@ set(COMMON_OBJ_LIST
     $<TARGET_OBJECTS:freshwrapper-obj>
     $<TARGET_OBJECTS:parson-obj>
     $<TARGET_OBJECTS:uri-parser-obj>
+    $<TARGET_OBJECTS:config-parser-obj>
 )
 
 # wrapper for PepperFlash
 set(WITH_PEPPERFLASH TRUE CACHE STRING "generate wrapper for PepperFlash")
 if (WITH_PEPPERFLASH)
-    add_library(freshwrapper-pepperflash SHARED ${COMMON_OBJ_LIST} config_pepperflash.c)
-    target_link_libraries(freshwrapper-pepperflash ${REQ_LIBRARIES})
-    target_link_libraries(dep_check freshwrapper-pepperflash)
+    add_library(freshwrapper-flashplayer SHARED ${COMMON_OBJ_LIST} config_pepperflash.c)
+    target_link_libraries(freshwrapper-flashplayer ${SYMBOLMAP} ${REQ_LIBRARIES})
+    target_link_libraries(dep_check freshwrapper-flashplayer)
+    install(TARGETS freshwrapper-flashplayer DESTINATION ${MOZPLUGIN_INSTALL_DIR})
 endif()
 
 # wrapper for Native Client
 set(WITH_NACL FALSE CACHE STRING "generate wrapper for Native Client")
 if (WITH_NACL)
     add_library(freshwrapper-nacl SHARED ${COMMON_OBJ_LIST} config_nacl.c)
-    target_link_libraries(freshwrapper-nacl ${REQ_LIBRARIES})
+    target_link_libraries(freshwrapper-nacl ${SYMBOLMAP} ${REQ_LIBRARIES})
     target_link_libraries(dep_check freshwrapper-nacl)
+    install(TARGETS freshwrapper-nacl DESTINATION ${MOZPLUGIN_INSTALL_DIR})
 endif()
 
 # libpdf wrapper
 set(WITH_LIBPDF FALSE CACHE STRING "generate wrapper for libpdf.so")
 if (WITH_LIBPDF)
-    add_library(freshwrapper-libpdf SHARED ${COMMON_OBJ_LIST} config_libpdf.c)
-    target_link_libraries(freshwrapper-libpdf ${REQ_LIBRARIES})
-    target_link_libraries(dep_check freshwrapper-libpdf)
+    add_library(freshwrapper-libpdf-backend SHARED ${COMMON_OBJ_LIST} config_libpdf_backend.c)
+    target_link_libraries(freshwrapper-libpdf-backend ${SYMBOLMAP} ${REQ_LIBRARIES})
+    target_link_libraries(dep_check freshwrapper-libpdf-backend)
+
+    add_library(freshwrapper-libpdf-frontend SHARED
+                np_libpdf_frontend.c
+                trace_core.c
+                config.c
+                $<TARGET_OBJECTS:config-parser-obj>
+                config_libpdf_frontend.c)
+    target_link_libraries(freshwrapper-libpdf-frontend ${SYMBOLMAP} txt-resources)
+    target_link_libraries(dep_check freshwrapper-libpdf-frontend)
+
+    install(TARGETS freshwrapper-libpdf-frontend DESTINATION ${MOZPLUGIN_INSTALL_DIR})
+    install(TARGETS freshwrapper-libpdf-backend DESTINATION ${MOZPLUGIN_INSTALL_DIR})
 endif()

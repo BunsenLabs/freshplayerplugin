@@ -52,6 +52,10 @@ struct fpp_config_s {
     int     vsync_afterwait_us;
     int     fs_delay_ms;
     int     enable_vsync;
+    int     double_click_delay_ms;
+    int     show_version_info;
+    int     probe_video_capture_devices;
+    int     enable_xrender;
     struct {
         int   connect_first_loader_to_unrequested_stream;
         int   dump_resource_histogram;
@@ -60,6 +64,7 @@ struct fpp_config_s {
         int   plugin_missing;
         int   incompatible_npapi_version;
         int   x_synchronize;
+        int   avoid_stdout;
     } quirks;
 };
 

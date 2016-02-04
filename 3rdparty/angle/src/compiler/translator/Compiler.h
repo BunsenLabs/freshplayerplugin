@@ -21,25 +21,8 @@
 #include "compiler/translator/InfoSink.h"
 #include "compiler/translator/Pragma.h"
 #include "compiler/translator/SymbolTable.h"
-#include "compiler/translator/VariableInfo.h"
-#include "third_party/compiler/ArrayBoundsClamper.h"
 
 class TCompiler;
-class TDependencyGraph;
-#ifdef ANGLE_ENABLE_HLSL
-class TranslatorHLSL;
-#endif // ANGLE_ENABLE_HLSL
-
-//
-// Helper function to identify specs that are based on the WebGL spec,
-// like the CSS Shaders spec.
-//
-bool IsWebGLBasedSpec(ShShaderSpec spec);
-
-//
-// Helper function to check if the shader type is GLSL.
-//
-bool IsGLSL130OrNewer(ShShaderOutput output);
 
 //
 // The base class used to back handles returned to the driver.
@@ -49,9 +32,6 @@ public:
     TShHandleBase();
     virtual ~TShHandleBase();
     virtual TCompiler* getAsCompiler() { return 0; }
-#ifdef ANGLE_ENABLE_HLSL
-    virtual TranslatorHLSL* getAsTranslatorHLSL() { return 0; }
-#endif // ANGLE_ENABLE_HLSL
 
 protected:
     // Memory allocator. Allocates and tracks memory required by the compiler.
@@ -85,11 +65,8 @@ class TCompiler : public TShHandleBase
     int getShaderVersion() const { return shaderVersion; }
     TInfoSink& getInfoSink() { return infoSink; }
 
-    const std::vector<sh::Attribute> &getAttributes() const { return attributes; }
-    const std::vector<sh::Attribute> &getOutputVariables() const { return outputVariables; }
-    const std::vector<sh::Uniform> &getUniforms() const { return uniforms; }
-    const std::vector<sh::Varying> &getVaryings() const { return varyings; }
-    const std::vector<sh::InterfaceBlock> &getInterfaceBlocks() const { return interfaceBlocks; }
+    // Clears the results from the previous compilation.
+    void clearResults();
 
     ShHashFunction64 getHashFunction() const { return hashFunction; }
     NameMap& getNameMap() { return nameMap; }
@@ -107,61 +84,19 @@ class TCompiler : public TShHandleBase
     bool InitBuiltInSymbolTable(const ShBuiltInResources& resources);
     // Compute the string representation of the built-in resources
     void setResourceString();
-    // Clears the results from the previous compilation.
-    void clearResults();
-    // Return false if the call depth is exceeded.
-    bool checkCallDepth();
     // Returns true if a program has no conflicting or missing fragment outputs
     bool validateOutputs(TIntermNode* root);
-    // Rewrites a shader's intermediate tree according to the CSS Shaders spec.
-    void rewriteCSSShader(TIntermNode* root);
-    // Returns true if the given shader does not exceed the minimum
-    // functionality mandated in GLSL 1.0 spec Appendix A.
-    bool validateLimitations(TIntermNode* root);
-    // Collect info for all attribs, uniforms, varyings.
-    void collectVariables(TIntermNode* root);
     // Add emulated functions to the built-in function emulator.
     virtual void initBuiltInFunctionEmulator(BuiltInFunctionEmulator *emu, int compileOptions) {};
     // Translate to object code.
     virtual void translate(TIntermNode *root, int compileOptions) = 0;
-    // Returns true if, after applying the packing rules in the GLSL 1.017 spec
-    // Appendix A, section 7, the shader does not use too many uniforms.
-    bool enforcePackingRestrictions();
-    // Insert statements to initialize varyings without static use in the beginning
-    // of main(). It is to work around a Mac driver where such varyings in a vertex
-    // shader may be optimized out incorrectly at compile time, causing a link failure.
-    // This function should only be applied to vertex shaders.
-    void initializeVaryingsWithoutStaticUse(TIntermNode* root);
-    // Insert gl_Position = vec4(0,0,0,0) to the beginning of main().
-    // It is to work around a Linux driver bug where missing this causes compile failure
-    // while spec says it is allowed.
-    // This function should only be applied to vertex shaders.
-    void initializeGLPosition(TIntermNode* root);
-    // Returns true if the shader passes the restrictions that aim to prevent timing attacks.
-    bool enforceTimingRestrictions(TIntermNode* root, bool outputGraph);
-    // Returns true if the shader does not use samplers.
-    bool enforceVertexShaderTimingRestrictions(TIntermNode* root);
-    // Returns true if the shader does not use sampler dependent values to affect control
-    // flow or in operations whose time can depend on the input values.
-    bool enforceFragmentShaderTimingRestrictions(const TDependencyGraph& graph);
-    // Return true if the maximum expression complexity is below the limit.
-    bool limitExpressionComplexity(TIntermNode* root);
     // Get built-in extensions with default behavior.
     const TExtensionBehavior& getExtensionBehavior() const;
     const char *getSourcePath() const;
     const TPragma& getPragma() const { return mPragma; }
     void writePragma();
 
-    const ArrayBoundsClamper& getArrayBoundsClamper() const;
-    ShArrayIndexClampingStrategy getArrayIndexClampingStrategy() const;
     const BuiltInFunctionEmulator& getBuiltInFunctionEmulator() const;
-
-    std::vector<sh::Attribute> attributes;
-    std::vector<sh::Attribute> outputVariables;
-    std::vector<sh::Uniform> uniforms;
-    std::vector<sh::ShaderVariable> expandedUniforms;
-    std::vector<sh::Varying> varyings;
-    std::vector<sh::InterfaceBlock> interfaceBlocks;
 
   private:
     // Creates the function call DAG for further analysis, returning false if there is a recursion
@@ -172,7 +107,6 @@ class TCompiler : public TShHandleBase
 
     // Removes unused function declarations and prototypes from the AST
     class UnusedPredicate;
-    bool pruneUnusedFunctions(TIntermNode *root);
 
     TIntermNode *compileTreeImpl(const char* const shaderStrings[],
         size_t numStrings, int compileOptions);
@@ -207,8 +141,6 @@ class TCompiler : public TShHandleBase
     TExtensionBehavior extensionBehavior;
     bool fragmentPrecisionHigh;
 
-    ArrayBoundsClamper arrayBoundsClamper;
-    ShArrayIndexClampingStrategy clampingStrategy;
     BuiltInFunctionEmulator builtInFunctionEmulator;
 
     // Results of compilation.
