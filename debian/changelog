@@ -1,3 +1,9 @@
+freshplayerplugin (0.3.4-1) UNRELEASED; urgency=medium
+
+  * New upstream release (Closes: #805263, #797827)
+
+ -- Vincent Danjean <vdanjean@debian.org>  Thu, 04 Feb 2016 21:58:41 +0100
+
 freshplayerplugin (0.3.2-1) unstable; urgency=medium
 
   * New upstream release (Closes: #796856)
