@@ -1,4 +1,4 @@
-freshplayerplugin (0.3.4-1) UNRELEASED; urgency=medium
+freshplayerplugin (0.3.4-1) unstable; urgency=medium
 
   * New upstream release (Closes: #805263, #797827)
   * Implement the update-alternatives system for flash-mozilla.so
