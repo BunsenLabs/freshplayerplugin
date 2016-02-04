@@ -10,10 +10,6 @@ Files: 3rdparty/angle/*
 Copyright: 2002-2013 The ANGLE Project Authors
 License: BSD-TransGaming-Google-et-all
 
-Files: 3rdparty/chromium/*
-Copyright: 2014 The Chromium Authors
-License: BSD-Google
-
 Files: 3rdparty/npapi/*
 Copyright: The Mozilla Foundation
 License: MPL-2.0
