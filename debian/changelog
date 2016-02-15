@@ -1,3 +1,9 @@
+freshplayerplugin (0.3.4-3) unstable; urgency=medium
+
+  * really add the /usr/lib/mozilla/plugins directory (Closes: #814652)
+
+ -- Vincent Danjean <vdanjean@debian.org>  Mon, 15 Feb 2016 17:33:28 +0100
+
 freshplayerplugin (0.3.4-2) unstable; urgency=medium
 
   * add the '/usr/lib/mozilla/plugins' (empty) directory in the
