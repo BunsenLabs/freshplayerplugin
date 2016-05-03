@@ -1,0 +1,29 @@
+Fix typos
+--- a/3rdparty/angle/src/compiler/translator/InfoSink.cpp
++++ b/3rdparty/angle/src/compiler/translator/InfoSink.cpp
+@@ -26,7 +26,7 @@
+             sink.append("NOTE: ");
+             break;
+         default:
+-            sink.append("UNKOWN ERROR: ");
++            sink.append("UNKNOWN ERROR: ");
+             break;
+     }
+ }
+--- a/3rdparty/angle/src/compiler/translator/InitializeDll.cpp
++++ b/3rdparty/angle/src/compiler/translator/InitializeDll.cpp
+@@ -16,12 +16,12 @@
+ bool InitProcess()
+ {
+     if (!InitializePoolIndex()) {
+-        assert(0 && "InitProcess(): Failed to initalize global pool");
++        assert(0 && "InitProcess(): Failed to initialize global pool");
+         return false;
+     }
+ 
+     if (!InitializeParseContextIndex()) {
+-        assert(0 && "InitProcess(): Failed to initalize parse context");
++        assert(0 && "InitProcess(): Failed to initialize parse context");
+         return false;
+     }
+ 
