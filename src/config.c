@@ -125,6 +125,7 @@ initialize_quirks(void)
     if (fp) {
         char buf[2048];
         size_t read_bytes = fread(buf, 1, sizeof(buf) - 1, fp);
+        buf[MIN(read_bytes, sizeof(buf) - 1)] = 0;
 
         if (read_bytes > 0)
             if (strstr(buf, "WebKitPluginProcess"))
@@ -195,13 +196,10 @@ fpp_config_initialize(void)
         if (cfg_parse(cfg, global_config) != CFG_SUCCESS) {
             trace_info_f("can't open configuration file %s, using default values\n", global_config);
             config = default_config;
-            goto quit;
         }
     }
 
     cfg_free(cfg);
-
-quit:
 
     // restore locale
     setlocale(LC_ALL, "");
