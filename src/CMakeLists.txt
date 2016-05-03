@@ -5,7 +5,7 @@ endif()
 
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
-set(MOZPLUGIN_INSTALL_DIR "lib${LIB_SUFFIX}/mozilla/plugins/" CACHE PATH "plugin install directory")
+set(MOZPLUGIN_INSTALL_DIR "lib${LIB_SUFFIX}/mozilla/plugins/" CACHE STRING "plugin install directory")
 
 add_subdirectory(uri_parser)
 add_subdirectory(config_parser)
@@ -153,7 +153,7 @@ if (WITH_LIBPDF)
                 config.c
                 $<TARGET_OBJECTS:config-parser-obj>
                 config_libpdf_frontend.c)
-    target_link_libraries(freshwrapper-libpdf-frontend ${SYMBOLMAP} txt-resources)
+    target_link_libraries(freshwrapper-libpdf-frontend ${SYMBOLMAP} txt-resources ${GLIB_LIBRARIES})
     target_link_libraries(dep_check freshwrapper-libpdf-frontend)
 
     install(TARGETS freshwrapper-libpdf-frontend DESTINATION ${MOZPLUGIN_INSTALL_DIR})
