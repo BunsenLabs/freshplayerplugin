@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013-2015  Rinat Ibragimov
+ * Copyright © 2013-2017  Rinat Ibragimov
  *
  * This file is part of FreshPlayerPlugin.
  *
@@ -22,12 +22,16 @@
  * SOFTWARE.
  */
 
-#ifndef FPP_PPB_NET_ADDRESS_H
-#define FPP_PPB_NET_ADDRESS_H
+#pragma once
 
-#include <ppapi/c/private/ppb_net_address_private.h>
+#include "pp_resource.h"
 #include <ppapi/c/ppb_net_address.h>
+#include <ppapi/c/private/ppb_net_address_private.h>
 
+struct pp_net_address_s {
+    COMMON_STRUCTURE_FIELDS
+    struct PP_NetAddress_Private   addr;
+};
 
 PP_Bool
 ppb_net_address_private_are_equal(const struct PP_NetAddress_Private *addr1,
@@ -92,6 +96,3 @@ ppb_net_address_describe_as_ipv4_address(PP_Resource addr, struct PP_NetAddress_
 
 PP_Bool
 ppb_net_address_describe_as_ipv6_address(PP_Resource addr, struct PP_NetAddress_IPv6 *ipv6_addr);
-
-
-#endif // FPP_PPB_NET_ADDRESS_H

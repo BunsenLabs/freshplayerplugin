@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013-2015  Rinat Ibragimov
+ * Copyright © 2013-2017  Rinat Ibragimov
  *
  * This file is part of FreshPlayerPlugin.
  *
@@ -22,20 +22,37 @@
  * SOFTWARE.
  */
 
-#include <pthread.h>
-#include <ppapi/c/pp_errors.h>
-#include "ppb_audio.h"
-#include "ppb_core.h"
-#include <stdlib.h>
-#include <glib.h>
-#include "trace.h"
-#include "tables.h"
-#include "config.h"
-#include "pp_resource.h"
-#include "pp_interface.h"
-#include "ppb_message_loop.h"
-#include "eintr_retry.h"
 #include "audio_thread.h"
+#include "pp_interface.h"
+#include "pp_resource.h"
+#include "ppb_audio.h"
+#include "ppb_audio_config.h"
+#include "ppb_core.h"
+#include "ppb_instance.h"
+#include "static_assert.h"
+#include "tables.h"
+#include "trace_core.h"
+#include <glib.h>
+#include <npapi/npapi.h>
+#include <npapi/npfunctions.h>
+#include <ppapi/c/pp_errors.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
+
+struct pp_audio_s {
+    COMMON_STRUCTURE_FIELDS
+    uint32_t                sample_rate;
+    uint32_t                sample_frame_count;
+    PPB_Audio_Callback_1_0  callback_1_0;
+    PPB_Audio_Callback      callback_1_1;
+    void                   *user_data;
+    audio_stream_ops       *stream_ops;
+    audio_stream           *stream;
+    int                     is_playing;
+};
+
+STATIC_ASSERT(sizeof(struct pp_audio_s) <= LARGEST_RESOURCE_SIZE);
 
 static
 void
@@ -182,7 +199,10 @@ update_instance_playing_audio_status_ptac(void *p)
         return;
 
     int is_playing_audio = g_atomic_int_get(&pp_i->audio_source_count) > 0;
-    npn.setvalue(pp_i->npp, NPPVpluginIsPlayingAudio, GINT_TO_POINTER(is_playing_audio));
+    NPError err = npn.setvalue(pp_i->npp, NPPVpluginIsPlayingAudio,
+                               GINT_TO_POINTER(is_playing_audio));
+    if (err != NPERR_NO_ERROR)
+        trace_info_f("%s, failed to set NPPVpluginIsPlayingAudio\n", __func__);
 }
 
 PP_Bool

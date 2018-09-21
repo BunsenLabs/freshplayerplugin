@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013-2015  Rinat Ibragimov
+ * Copyright © 2013-2017  Rinat Ibragimov
  *
  * This file is part of FreshPlayerPlugin.
  *
@@ -22,11 +22,9 @@
  * SOFTWARE.
  */
 
-#ifndef FPP_AUDIO_THREAD_H
-#define FPP_AUDIO_THREAD_H
+#pragma once
 
 #include <stdint.h>
-
 
 typedef enum {
     STREAM_PLAYBACK,
@@ -85,6 +83,3 @@ audio_select_implementation(void);
 
 void
 audio_capture_device_list_free(audio_device_name *list);
-
-
-#endif // FPP_AUDIO_THREAD_H

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013-2015  Rinat Ibragimov
+ * Copyright © 2013-2017  Rinat Ibragimov
  *
  * This file is part of FreshPlayerPlugin.
  *
@@ -22,16 +22,12 @@
  * SOFTWARE.
  */
 
-#ifndef FPP_PPB_MEMORY_H
-#define FPP_PPB_MEMORY_H
+#pragma once
 
 #include <ppapi/c/dev/ppb_memory_dev.h>
-
 
 void *
 ppb_memory_mem_alloc(uint32_t num_bytes);
 
 void
 ppb_memory_mem_free(void *ptr);
-
-#endif // FPP_PPB_MEMORY_H

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013-2015  Rinat Ibragimov
+ * Copyright © 2013-2017  Rinat Ibragimov
  *
  * This file is part of FreshPlayerPlugin.
  *
@@ -22,14 +22,34 @@
  * SOFTWARE.
  */
 
-#ifndef FPP_PPB_URL_REQUEST_INFO_H
-#define FPP_PPB_URL_REQUEST_INFO_H
+#pragma once
 
-#include <ppapi/c/ppb_url_request_info.h>
-#include <stdlib.h>
+#include "pp_resource.h"
 #include <glib.h>
+#include <ppapi/c/ppb_url_request_info.h>
+#include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 
+struct pp_url_request_info_s {
+    COMMON_STRUCTURE_FIELDS
+    enum pp_request_method_e    method;
+    char                       *url;
+    char                       *headers;
+    unsigned int                is_immediate_javascript; // data in url is javascript line
+    PP_Bool                     stream_to_file;
+    PP_Bool                     follow_redirects;
+    PP_Bool                     record_download_progress;
+    PP_Bool                     record_upload_progress;
+    char                       *custom_referrer_url;
+    PP_Bool                     allow_cross_origin_requests;
+    PP_Bool                     allow_credentials;
+    char                       *custom_content_transfer_encoding;
+    int32_t                     prefetch_buffer_upper_threshold;
+    int32_t                     prefetch_buffer_lower_threshold;
+    char                       *custom_user_agent;
+    GArray                     *post_data;
+};
 
 /// descriptor of post data item
 struct post_data_item_s {
@@ -55,7 +75,7 @@ size_t
 post_data_get_all_item_length(GArray *post_data);
 
 void
-post_data_write_to_fp(GArray *post_data, guint idx, FILE *fp);
+post_data_write_to_gstring(GArray *post_data, guint idx, GString *buf);
 
 PP_Resource
 ppb_url_request_info_create(PP_Instance instance);
@@ -74,5 +94,3 @@ PP_Bool
 ppb_url_request_info_append_file_to_body(PP_Resource request, PP_Resource file_ref,
                                          int64_t start_offset, int64_t number_of_bytes,
                                          PP_Time expected_last_modified_time);
-
-#endif // FPP_PPB_URL_REQUEST_INFO_H

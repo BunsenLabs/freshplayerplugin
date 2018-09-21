@@ -10,8 +10,6 @@ set(MOZPLUGIN_INSTALL_DIR "lib${LIB_SUFFIX}/mozilla/plugins/" CACHE STRING "plug
 add_subdirectory(uri_parser)
 add_subdirectory(config_parser)
 
-include_directories("${GENERATED_INCLUDE_DIRS}")
-
 set(source_list
     async_network.c
     audio_thread.c
@@ -19,15 +17,18 @@ set(source_list
     audio_thread_noaudio.c
     config.c
     compat.c
+    encoding_alias.c
     font.c
+    gtk_wrapper.c
     header_parser.c
     keycodeconvert.c
+    np_asynccall.c
     np_entry.c
     np_functions.c
     main_thread.c
     reverse_constant.c
     tables.c
-    trace.c
+    trace_helpers.c
     trace_core.c
     n2p_proxy_class.c
     p2n_proxy_class.c
@@ -129,33 +130,4 @@ if (WITH_PEPPERFLASH)
     target_link_libraries(freshwrapper-flashplayer ${SYMBOLMAP} ${REQ_LIBRARIES})
     target_link_libraries(dep_check freshwrapper-flashplayer)
     install(TARGETS freshwrapper-flashplayer DESTINATION ${MOZPLUGIN_INSTALL_DIR})
-endif()
-
-# wrapper for Native Client
-set(WITH_NACL FALSE CACHE STRING "generate wrapper for Native Client")
-if (WITH_NACL)
-    add_library(freshwrapper-nacl SHARED ${COMMON_OBJ_LIST} config_nacl.c)
-    target_link_libraries(freshwrapper-nacl ${SYMBOLMAP} ${REQ_LIBRARIES})
-    target_link_libraries(dep_check freshwrapper-nacl)
-    install(TARGETS freshwrapper-nacl DESTINATION ${MOZPLUGIN_INSTALL_DIR})
-endif()
-
-# libpdf wrapper
-set(WITH_LIBPDF FALSE CACHE STRING "generate wrapper for libpdf.so")
-if (WITH_LIBPDF)
-    add_library(freshwrapper-libpdf-backend SHARED ${COMMON_OBJ_LIST} config_libpdf_backend.c)
-    target_link_libraries(freshwrapper-libpdf-backend ${SYMBOLMAP} ${REQ_LIBRARIES})
-    target_link_libraries(dep_check freshwrapper-libpdf-backend)
-
-    add_library(freshwrapper-libpdf-frontend SHARED
-                np_libpdf_frontend.c
-                trace_core.c
-                config.c
-                $<TARGET_OBJECTS:config-parser-obj>
-                config_libpdf_frontend.c)
-    target_link_libraries(freshwrapper-libpdf-frontend ${SYMBOLMAP} txt-resources ${GLIB_LIBRARIES})
-    target_link_libraries(dep_check freshwrapper-libpdf-frontend)
-
-    install(TARGETS freshwrapper-libpdf-frontend DESTINATION ${MOZPLUGIN_INSTALL_DIR})
-    install(TARGETS freshwrapper-libpdf-backend DESTINATION ${MOZPLUGIN_INSTALL_DIR})
 endif()

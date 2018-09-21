@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013-2015  Rinat Ibragimov
+ * Copyright © 2013-2017  Rinat Ibragimov
  *
  * This file is part of FreshPlayerPlugin.
  *
@@ -22,11 +22,9 @@
  * SOFTWARE.
  */
 
-#ifndef FPP_PPB_FLASH_H
-#define FPP_PPB_FLASH_H
+#pragma once
 
 #include <ppapi/c/private/ppb_flash.h>
-
 
 void
 ppb_flash_set_instance_always_on_top(PP_Instance instance, PP_Bool on_top);
@@ -84,5 +82,3 @@ ppb_flash_get_device_id(PP_Instance instance);
 
 int32_t
 ppb_flash_get_setting_int(PP_Instance instance, PP_FlashSetting setting);
-
-#endif // FPP_PPB_FLASH_H

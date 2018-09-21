@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013-2015  Rinat Ibragimov
+ * Copyright © 2013-2017  Rinat Ibragimov
  *
  * This file is part of FreshPlayerPlugin.
  *
@@ -22,13 +22,11 @@
  * SOFTWARE.
  */
 
-#include "uri_parser.h"
-#include <assert.h>
-#include <string.h>
-#include <stdio.h>
-#include <glib.h>
 #include "../compat.h"
-
+#include "uri_parser.h"
+#include <glib.h>
+#include <stdio.h>
+#include <string.h>
 
 typedef struct {
     int   len;

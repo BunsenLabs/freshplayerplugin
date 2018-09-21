@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013-2015  Rinat Ibragimov
+ * Copyright © 2013-2017  Rinat Ibragimov
  *
  * This file is part of FreshPlayerPlugin.
  *
@@ -22,18 +22,16 @@
  * SOFTWARE.
  */
 
-#ifndef FPP_PPB_VAR_H
-#define FPP_PPB_VAR_H
+#pragma once
 
-#include <ppapi/c/ppb_var.h>
-#include <ppapi/c/ppb_var_array_buffer.h>
-#include <ppapi/c/ppb_var_array.h>
-#include <ppapi/c/ppb_var_dictionary.h>
-#include <ppapi/c/dev/ppb_var_deprecated.h>
-#include <string.h>
 #include <npapi/npapi.h>
 #include <npapi/npruntime.h>
-
+#include <ppapi/c/dev/ppb_var_deprecated.h>
+#include <ppapi/c/ppb_var.h>
+#include <ppapi/c/ppb_var_array.h>
+#include <ppapi/c/ppb_var_array_buffer.h>
+#include <ppapi/c/ppb_var_dictionary.h>
+#include <string.h>
 
 void
 ppb_var_add_ref(struct PP_Var var);
@@ -150,6 +148,3 @@ ppb_var_array_get_length(struct PP_Var array);
 
 PP_Bool
 ppb_var_array_set_length(struct PP_Var array, uint32_t length);
-
-
-#endif // FPP_PPB_VAR_H

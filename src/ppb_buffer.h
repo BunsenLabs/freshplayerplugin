@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013-2015  Rinat Ibragimov
+ * Copyright © 2013-2017  Rinat Ibragimov
  *
  * This file is part of FreshPlayerPlugin.
  *
@@ -22,11 +22,9 @@
  * SOFTWARE.
  */
 
-#ifndef FPP_PPB_BUFFER_H
-#define FPP_PPB_BUFFER_H
+#pragma once
 
 #include <ppapi/c/dev/ppb_buffer_dev.h>
-
 
 PP_Resource
 ppb_buffer_create(PP_Instance instance, uint32_t size_in_bytes);
@@ -42,5 +40,3 @@ ppb_buffer_map(PP_Resource resource);
 
 void
 ppb_buffer_unmap(PP_Resource resource);
-
-#endif // FPP_PPB_BUFFER_H

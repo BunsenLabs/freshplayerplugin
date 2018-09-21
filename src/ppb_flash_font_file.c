@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013-2015  Rinat Ibragimov
+ * Copyright © 2013-2017  Rinat Ibragimov
  *
  * This file is part of FreshPlayerPlugin.
  *
@@ -22,16 +22,30 @@
  * SOFTWARE.
  */
 
+#include "font.h"
+#include "pp_interface.h"
+#include "pp_resource.h"
 #include "ppb_flash_font_file.h"
-#include <stdlib.h>
-#include "trace.h"
+#include "static_assert.h"
 #include "tables.h"
-#include "ppb_var.h"
+#include "trace_core.h"
+#include "trace_helpers.h"
+#include <arpa/inet.h>  // for htonl()
+#include <glib.h>
+#include <pango/pangoft2.h>
+#include <stdlib.h>
+
 #include <ft2build.h>
 #include FT_TRUETYPE_TABLES_H
-#include <arpa/inet.h>      // for htonl()
-#include "pp_interface.h"
 
+struct pp_flash_font_file_s {
+    COMMON_STRUCTURE_FIELDS
+    PangoFont              *font;
+    FT_Face                 ft_face;
+    PP_PrivateFontCharset   charset;
+};
+
+STATIC_ASSERT(sizeof(struct pp_flash_font_file_s) <= LARGEST_RESOURCE_SIZE);
 
 PP_Resource
 ppb_flash_font_file_create(PP_Instance instance,

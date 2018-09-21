@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013-2015  Rinat Ibragimov
+ * Copyright © 2013-2017  Rinat Ibragimov
  *
  * This file is part of FreshPlayerPlugin.
  *
@@ -24,15 +24,19 @@
 
 #define _FILE_OFFSET_BITS   64
 #define _GNU_SOURCE             // for basename()
-#include "ppb_file_ref.h"
-#include <stdlib.h>
-#include "trace.h"
-#include "tables.h"
-#include "eintr_retry.h"
-#include "ppb_var.h"
-#include "pp_interface.h"
-#include <ppapi/c/pp_errors.h>
 
+#include "pp_interface.h"
+#include "ppb_file_ref.h"
+#include "ppb_var.h"
+#include "static_assert.h"
+#include "trace_core.h"
+#include "utils.h"
+#include <ppapi/c/pp_errors.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+
+STATIC_ASSERT(sizeof(struct pp_file_ref_s) <= LARGEST_RESOURCE_SIZE);
 
 PP_Resource
 ppb_file_ref_create(PP_Resource file_system, const char *path)

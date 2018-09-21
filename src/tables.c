@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013-2015  Rinat Ibragimov
+ * Copyright © 2013-2017  Rinat Ibragimov
  *
  * This file is part of FreshPlayerPlugin.
  *
@@ -22,22 +22,23 @@
  * SOFTWARE.
  */
 
+#include "config.h"
+#include "ppb_instance.h"
+#include "screensaver_control.h"
+#include "tables.h"
+#include "trace_core.h"
+#include <GL/glx.h>
+#include <X11/Xlib.h>
+#include <X11/extensions/Xrandr.h>
+#include <fcntl.h>
 #include <glib.h>
+#include <pango/pangoft2.h>
+#include <pthread.h>
 #include <stdlib.h>
 #include <string.h>
-#include <pthread.h>
-#include "tables.h"
-#include "trace.h"
-#include "ppb_var.h"
-#include "p2n_proxy_class.h"
-#include "n2p_proxy_class.h"
-#include "config.h"
-#include <X11/Xlib.h>
-#include <X11/Xutil.h>
-#include <X11/extensions/Xrandr.h>
-#include <GL/glx.h>
-#include "screensaver_control.h"
-
+#include <time.h>
+#include <unistd.h>
+#include <va/va_x11.h>
 
 NPNetscapeFuncs     npn;
 struct display_s    display;

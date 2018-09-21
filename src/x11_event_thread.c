@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013-2015  Rinat Ibragimov
+ * Copyright © 2013-2017  Rinat Ibragimov
  *
  * This file is part of FreshPlayerPlugin.
  *
@@ -22,18 +22,21 @@
  * SOFTWARE.
  */
 
-#include "x11_event_thread.h"
-#include <glib.h>
-#include <pthread.h>
-#include "pp_resource.h"
-#include "tables.h"
-#include "xembed.h"
-#include "reverse_constant.h"
-#include "trace.h"
-#include "utils.h"
 #include "eintr_retry.h"
+#include "ppb_instance.h"
+#include "tables.h"
+#include "trace_core.h"
+#include "utils.h"
+#include "x11_event_thread.h"
+#include "xembed.h"
+#include <X11/Xlib.h>
+#include <errno.h>
+#include <glib.h>
 #include <poll.h>
-
+#include <ppapi/c/pp_instance.h>
+#include <pthread.h>
+#include <string.h>
+#include <unistd.h>
 
 static GHashTable        *ht = NULL;  // Window -> struct ht_entry_s
 static GHashTable        *socket_ht = NULL; // plug_wnd -> socket wnd

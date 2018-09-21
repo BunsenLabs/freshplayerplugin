@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013-2015  Rinat Ibragimov
+ * Copyright © 2013-2017  Rinat Ibragimov
  *
  * This file is part of FreshPlayerPlugin.
  *
@@ -23,16 +23,17 @@
  */
 
 #include "audio_thread.h"
-#include <pthread.h>
-#include <pulse/pulseaudio.h>
-#include <pulse/mainloop.h>
+#include "trace_core.h"
+#include "trace_helpers.h"
 #include <glib.h>
+#include <pthread.h>
+#include <pulse/mainloop.h>
+#include <pulse/pulseaudio.h>
+#include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
-#include "trace.h"
-
 
 #define CLIENT_NAME     "freshwrapper"
-
 
 struct audio_stream_s {
     struct pa_sample_spec       sample_spec;

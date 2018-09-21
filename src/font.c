@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013-2015  Rinat Ibragimov
+ * Copyright © 2013-2017  Rinat Ibragimov
  *
  * This file is part of FreshPlayerPlugin.
  *
@@ -24,11 +24,14 @@
 
 #include "font.h"
 #include "pp_resource.h"
-#include "tables.h"
-#include <ppapi/c/pp_errors.h>
+#include "ppb_image_data.h"
 #include "ppb_var.h"
-#include "trace.h"
-
+#include "tables.h"
+#include "trace_core.h"
+#include <cairo.h>
+#include <glib.h>
+#include <pango/pangocairo.h>
+#include <string.h>
 
 struct PP_Var
 fpp_font_get_font_families(void)

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013-2015  Rinat Ibragimov
+ * Copyright © 2013-2017  Rinat Ibragimov
  *
  * This file is part of FreshPlayerPlugin.
  *
@@ -22,16 +22,23 @@
  * SOFTWARE.
  */
 
-#include "ppb_font.h"
-#include <stdlib.h>
-#include "trace.h"
-#include <glib.h>
-#include <pango/pangoft2.h>
-#include "tables.h"
-#include "ppb_var.h"
 #include "font.h"
-#include <ppapi/c/pp_errors.h>
 #include "pp_interface.h"
+#include "pp_resource.h"
+#include "ppb_font.h"
+#include "static_assert.h"
+#include "tables.h"
+#include "trace_core.h"
+#include "trace_helpers.h"
+#include <glib.h>
+#include <ppapi/c/pp_errors.h>
+
+struct pp_font_s {
+    COMMON_STRUCTURE_FIELDS
+    struct fpp_font         ff;
+};
+
+STATIC_ASSERT(sizeof(struct pp_font_s) <= LARGEST_RESOURCE_SIZE);
 
 
 struct PP_Var

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013-2015  Rinat Ibragimov
+ * Copyright © 2013-2017  Rinat Ibragimov
  *
  * This file is part of FreshPlayerPlugin.
  *
@@ -22,12 +22,18 @@
  * SOFTWARE.
  */
 
-#include "ppb_printing.h"
-#include "pp_resource.h"
-#include "trace.h"
-#include "tables.h"
 #include "pp_interface.h"
+#include "pp_resource.h"
+#include "ppb_printing.h"
+#include "static_assert.h"
+#include "tables.h"
+#include "trace_core.h"
 
+struct pp_printing_s {
+    COMMON_STRUCTURE_FIELDS
+};
+
+STATIC_ASSERT(sizeof(struct pp_printing_s) <= LARGEST_RESOURCE_SIZE);
 
 PP_Resource
 ppb_printing_create(PP_Instance instance)

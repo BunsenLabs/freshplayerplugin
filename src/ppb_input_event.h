@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013-2015  Rinat Ibragimov
+ * Copyright © 2013-2017  Rinat Ibragimov
  *
  * This file is part of FreshPlayerPlugin.
  *
@@ -22,13 +22,11 @@
  * SOFTWARE.
  */
 
-#ifndef FPP_PPB_INPUT_EVENT_H
-#define FPP_PPB_INPUT_EVENT_H
+#pragma once
 
+#include <ppapi/c/dev/ppb_ime_input_event_dev.h>
 #include <ppapi/c/ppb_input_event.h>
 #include <ppapi/c/ppp_input_event.h>
-#include <ppapi/c/dev/ppb_ime_input_event_dev.h>
-
 
 int32_t
 ppb_input_event_request_input_events(PP_Instance instance, uint32_t event_classes);
@@ -154,5 +152,3 @@ ppb_ime_input_event_get_target_segment(PP_Resource ime_event);
 
 void
 ppb_ime_input_event_get_selection(PP_Resource ime_event, uint32_t *start, uint32_t *end);
-
-#endif // FPP_PPB_INPUT_EVENT_H

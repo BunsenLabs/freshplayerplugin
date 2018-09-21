@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013-2015  Rinat Ibragimov
+ * Copyright © 2013-2017  Rinat Ibragimov
  *
  * This file is part of FreshPlayerPlugin.
  *
@@ -22,12 +22,21 @@
  * SOFTWARE.
  */
 
-#ifndef FPP_UTILS_H
-#define FPP_UTILS_H
+#pragma once
 
-#include <unistd.h>
 #include <fcntl.h>
+#include <string.h>
+#include <unistd.h>
 
+#define free_and_nullify(item)          \
+    do {                                \
+        free(item);                     \
+        (item) = NULL;                  \
+    } while (0)
+
+#define nullsafe_strdup(s)       ((s) ? strdup(s) : NULL)
+
+#define PP_MakeCCB(func, user_data) PP_MakeCompletionCallback(func, user_data)
 
 static
 inline
@@ -38,5 +47,3 @@ make_nonblock(int fd)
     flags = fcntl(fd, F_GETFL, 0) | O_NONBLOCK;
     (void)fcntl(fd, F_SETFL, flags);
 }
-
-#endif // FPP_UTILS_H

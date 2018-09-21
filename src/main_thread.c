@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013-2015  Rinat Ibragimov
+ * Copyright © 2013-2017  Rinat Ibragimov
  *
  * This file is part of FreshPlayerPlugin.
  *
@@ -23,11 +23,14 @@
  */
 
 #include "main_thread.h"
+#include "ppb_instance.h"
 #include "ppb_message_loop.h"
-#include "pp_resource.h"
+#include "trace_core.h"
+#include "utils.h"
+#include <ppapi/c/pp_resource.h>
 #include <pthread.h>
-#include "trace.h"
-
+#include <stddef.h>
+#include <stdint.h>
 
 static
 void

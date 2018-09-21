@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013-2015  Rinat Ibragimov
+ * Copyright © 2013-2017  Rinat Ibragimov
  *
  * This file is part of FreshPlayerPlugin.
  *
@@ -22,25 +22,29 @@
  * SOFTWARE.
  */
 
-#include <assert.h>
-#include "ppb_url_request_info.h"
-#include <stdlib.h>
-#include <string.h>
-#include <inttypes.h>
-#include <ctype.h>
-#include "trace.h"
-#include "tables.h"
-#include "pp_resource.h"
-#include "reverse_constant.h"
-#include "ppb_var.h"
-#include <ppapi/c/pp_file_info.h>
-#include <ppapi/c/ppb_file_io.h>
-#include <ppapi/c/pp_errors.h>
-#include "ppb_flash_file.h"
-#include "ppb_core.h"
 #include "eintr_retry.h"
 #include "pp_interface.h"
+#include "pp_resource.h"
+#include "ppb_core.h"
+#include "ppb_flash_file.h"
+#include "ppb_url_request_info.h"
+#include "ppb_var.h"
+#include "reverse_constant.h"
+#include "static_assert.h"
+#include "tables.h"
+#include "trace_core.h"
+#include "trace_helpers.h"
+#include "utils.h"
+#include <ctype.h>
+#include <inttypes.h>
+#include <ppapi/c/pp_errors.h>
+#include <ppapi/c/pp_file_info.h>
+#include <ppapi/c/ppb_file_io.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 
+STATIC_ASSERT(sizeof(struct pp_url_request_info_s) <= LARGEST_RESOURCE_SIZE);
 
 PP_Resource
 ppb_url_request_info_create(PP_Instance instance)
@@ -361,7 +365,7 @@ post_data_free(GArray *post_data)
 }
 
 void
-post_data_write_to_fp(GArray *post_data, guint idx, FILE *fp)
+post_data_write_to_gstring(GArray *post_data, guint idx, GString *s)
 {
     char buf[128 * 1024];
     struct post_data_item_s *pdi = &g_array_index(post_data, struct post_data_item_s, idx);
@@ -378,14 +382,14 @@ post_data_write_to_fp(GArray *post_data, guint idx, FILE *fp)
             ssize_t read_bytes = RETRY_ON_EINTR(read(fd, buf, MIN(to_write, sizeof(buf))));
             if (read_bytes == -1)
                 goto err;
-            fwrite(buf, 1, (size_t)read_bytes, fp);
+            g_string_append_len(s, buf, (size_t)read_bytes);
             to_write -= read_bytes;
         }
 err:
         if (fd >= 0)
             close(fd);
     } else {
-        fwrite(pdi->data, 1, pdi->len, fp);
+        g_string_append_len(s, pdi->data, pdi->len);
     }
 }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013-2015  Rinat Ibragimov
+ * Copyright © 2013-2017  Rinat Ibragimov
  *
  * This file is part of FreshPlayerPlugin.
  *
@@ -22,11 +22,9 @@
  * SOFTWARE.
  */
 
-#ifndef FPP_PPB_TEXT_INPUT_H
-#define FPP_PPB_TEXT_INPUT_H
+#pragma once
 
 #include <ppapi/c/dev/ppb_text_input_dev.h>
-
 
 void
 ppb_text_input_interface_set_text_input_type(PP_Instance instance, PP_TextInput_Type_Dev type);
@@ -44,5 +42,3 @@ ppb_text_input_interface_update_surrounding_text(PP_Instance instance, const cha
 
 void
 ppb_text_input_interface_selection_changed(PP_Instance instance);
-
-#endif // FPP_PPB_TEXT_INPUT_H

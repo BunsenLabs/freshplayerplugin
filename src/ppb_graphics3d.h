@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013-2015  Rinat Ibragimov
+ * Copyright © 2013-2017  Rinat Ibragimov
  *
  * This file is part of FreshPlayerPlugin.
  *
@@ -22,11 +22,28 @@
  * SOFTWARE.
  */
 
-#ifndef FPP_PPB_GRAPHICS3D_H
-#define FPP_PPB_GRAPHICS3D_H
+#pragma once
 
+#include "glx.h"
+#include "pp_resource.h"
+#include <X11/Xlib.h>
+#include <X11/extensions/Xrender.h>
+#include <glib.h>
 #include <ppapi/c/ppb_graphics_3d.h>
 
+struct pp_graphics3d_s {
+    COMMON_STRUCTURE_FIELDS
+    GLXContext          glc;
+    GLXFBConfig         fb_config;
+    int32_t             depth;          ///< depth of the pixmap, 32 for transparent, 24 otherwise
+    GLXPixmap           glx_pixmap;
+    Pixmap              pixmap[2];      ///< first for immediate drawing, second - to store copy
+    Picture             xr_pict[2];     ///< XRender pictures for X pixmaps
+    XRenderPictFormat  *xr_pictfmt;
+    int32_t             width;
+    int32_t             height;
+    GHashTable         *sub_maps;
+};
 
 int32_t
 ppb_graphics3d_get_attrib_max_value(PP_Resource instance, int32_t attribute, int32_t *value);
@@ -51,5 +68,3 @@ ppb_graphics3d_resize_buffers(PP_Resource context, int32_t width, int32_t height
 
 int32_t
 ppb_graphics3d_swap_buffers(PP_Resource context, struct PP_CompletionCallback callback);
-
-#endif // FPP_PPB_GRAPHICS3D_H

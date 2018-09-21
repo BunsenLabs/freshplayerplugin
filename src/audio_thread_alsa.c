@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013-2015  Rinat Ibragimov
+ * Copyright © 2013-2017  Rinat Ibragimov
  *
  * This file is part of FreshPlayerPlugin.
  *
@@ -23,16 +23,21 @@
  */
 
 #include "audio_thread.h"
-#include <asoundlib.h>
-#include <pthread.h>
-#include <glib.h>
-#include <unistd.h>
-#include "trace.h"
 #include "config.h"
-#include "utils.h"
 #include "eintr_retry.h"
 #include "ppb_message_loop.h"
-
+#include "trace_core.h"
+#include "trace_helpers.h"
+#include "utils.h"
+#include <asoundlib.h>
+#include <errno.h>
+#include <glib.h>
+#include <poll.h>
+#include <pthread.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 
 struct audio_stream_s {
     audio_stream_direction      direction;

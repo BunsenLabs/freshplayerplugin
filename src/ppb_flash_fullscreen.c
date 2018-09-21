@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013-2015  Rinat Ibragimov
+ * Copyright © 2013-2017  Rinat Ibragimov
  *
  * This file is part of FreshPlayerPlugin.
  *
@@ -22,23 +22,30 @@
  * SOFTWARE.
  */
 
-#include "ppb_flash_fullscreen.h"
-#include "ppb_core.h"
-#include <pthread.h>
-#include <stdlib.h>
-#include "trace.h"
-#include "tables.h"
 #include "config.h"
-#include "pp_resource.h"
-#include <ppapi/c/ppp_instance.h>
-#include <ppapi/c/pp_errors.h>
-#include "reverse_constant.h"
-#include <X11/Xatom.h>
-#include <X11/Xutil.h>
 #include "pp_interface.h"
+#include "pp_resource.h"
+#include "ppb_core.h"
+#include "ppb_flash_fullscreen.h"
+#include "ppb_instance.h"
+#include "ppb_view.h"
+#include "tables.h"
+#include "trace_core.h"
+#include "utils.h"
+#include <X11/Xatom.h>
+#include <X11/Xlib.h>
+#include <X11/Xutil.h>
+#include <X11/keysym.h>
 #include <drm.h>
+#include <errno.h>
+#include <glib.h>
+#include <ppapi/c/ppp_instance.h>
+#include <pthread.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
 #include <sys/ioctl.h>
-
+#include <unistd.h>
 
 static volatile gint        currently_fullscreen = 0;
 static GAsyncQueue         *fullscreen_transition_queue = NULL;
@@ -121,11 +128,11 @@ call_did_change_view_comt(void *user_data, int32_t result)
     v->rect.point.x = 0;
     v->rect.point.y = 0;
     if (is_fullscreen) {
-        v->rect.size.width = pp_i->fs_width / config.device_scale;
-        v->rect.size.height = pp_i->fs_height / config.device_scale;
+        v->rect.size.width = pp_i->fs_width / config.device_scale + 0.5;
+        v->rect.size.height = pp_i->fs_height / config.device_scale + 0.5;
     } else {
-        v->rect.size.width = pp_i->width / config.device_scale;
-        v->rect.size.height = pp_i->height / config.device_scale;
+        v->rect.size.width = pp_i->width / config.device_scale + 0.5;
+        v->rect.size.height = pp_i->height / config.device_scale + 0.5;
     }
     pp_resource_release(view);
 
@@ -159,8 +166,10 @@ get_browser_window(void *p)
 {
     struct thread_param_s *tp = p;
 
-    if (npn.getvalue(tp->pp_i->npp, NPNVnetscapeWindow, &tp->browser_window) != NPERR_NO_ERROR)
+    if (npn.getvalue(tp->pp_i->npp, NPNVnetscapeWindow, &tp->browser_window) != NPERR_NO_ERROR) {
         tp->browser_window = None;
+        trace_error("%s, failed to get NPNVnetscapeWindow\n", __func__);
+    }
 
     pthread_barrier_wait(&cross_thread_call_barrier);
 }
@@ -256,27 +265,35 @@ fullscreen_window_thread_int(Display *dpy, struct thread_param_s *tp)
     // update windows state properties
     Atom netwm_state_atom = XInternAtom(dpy, "_NET_WM_STATE", False);
 
+    // build state atom list
+    Atom atom;
+    GArray *state_atoms = g_array_sized_new(FALSE, TRUE, sizeof(Atom), 10);
+
+    if (config.fullscreen_horz_maximize_atom) {
+        atom = XInternAtom(dpy, "_NET_WM_STATE_MAXIMIZED_HORZ", False);  // fill horizontal space
+        g_array_append_val(state_atoms, atom);
+    }
+
+    if (config.fullscreen_vert_maximize_atom) {
+        atom = XInternAtom(dpy, "_NET_WM_STATE_MAXIMIZED_VERT", False);  // fill vertical space
+        g_array_append_val(state_atoms, atom);
+    }
+
+    atom = XInternAtom(dpy, "_NET_WM_STATE_FULLSCREEN", False);  // go fullscreen
+    g_array_append_val(state_atoms, atom);
 
     if (config.tie_fullscreen_window_to_browser) {
-        Atom state_atoms[] = {
-            XInternAtom(dpy, "_NET_WM_STATE_MAXIMIZED_HORZ", False),// fill horizontal space
-            XInternAtom(dpy, "_NET_WM_STATE_MAXIMIZED_VERT", False),// fill vertical space
-            XInternAtom(dpy, "_NET_WM_STATE_FULLSCREEN", False),    // go fullscreen
-            XInternAtom(dpy, "_NET_WM_STATE_SKIP_PAGER", False),    // do not appear in pager
-            XInternAtom(dpy, "_NET_WM_STATE_SKIP_TASKBAR", False),  // do not appear in taskbar
-        };
-        XChangeProperty(dpy, pp_i->fs_wnd, netwm_state_atom, XA_ATOM, 32, PropModeReplace,
-                        (unsigned char *)&state_atoms, sizeof(state_atoms)/sizeof(state_atoms[0]));
-    } else {
+        atom = XInternAtom(dpy, "_NET_WM_STATE_SKIP_PAGER", False);  // do not appear in pager
+        g_array_append_val(state_atoms, atom);
 
-        Atom state_atoms[] = {
-            XInternAtom(dpy, "_NET_WM_STATE_MAXIMIZED_HORZ", False),// fill horizontal space
-            XInternAtom(dpy, "_NET_WM_STATE_MAXIMIZED_VERT", False),// fill vertical space
-            XInternAtom(dpy, "_NET_WM_STATE_FULLSCREEN", False),    // go fullscreen
-        };
-        XChangeProperty(dpy, pp_i->fs_wnd, netwm_state_atom, XA_ATOM, 32, PropModeReplace,
-                        (unsigned char *)&state_atoms, sizeof(state_atoms)/sizeof(state_atoms[0]));
+        atom = XInternAtom(dpy, "_NET_WM_STATE_SKIP_TASKBAR", False);  // do not appear in taskbar
+        g_array_append_val(state_atoms, atom);
     }
+
+    XChangeProperty(dpy, pp_i->fs_wnd, netwm_state_atom, XA_ATOM, 32, PropModeReplace,
+                    (unsigned char *)state_atoms->data, state_atoms->len);
+
+    g_array_free(state_atoms, TRUE);
 
     // give window a name
     const char *fs_window_name = "freshwrapper fullscreen window";
@@ -653,6 +670,8 @@ ppb_flash_fullscreen_get_screen_size(PP_Instance instance, struct PP_Size *size)
     size->width = pp_i->fs_width > 0 ? pp_i->fs_width : display.min_width;
     size->height = pp_i->fs_height > 0 ? pp_i->fs_height : display.min_height;
 
+    size->width /= config.device_scale;
+    size->height /= config.device_scale;
     return PP_TRUE;
 }
 

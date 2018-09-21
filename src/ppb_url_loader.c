@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013-2015  Rinat Ibragimov
+ * Copyright © 2013-2017  Rinat Ibragimov
  *
  * This file is part of FreshPlayerPlugin.
  *
@@ -23,26 +23,32 @@
  */
 
 #define _XOPEN_SOURCE   600
-#include "ppb_url_loader.h"
+#include "config.h"
+#include "eintr_retry.h"
+#include "pp_interface.h"
+#include "pp_resource.h"
 #include "ppb_core.h"
+#include "ppb_instance.h"
+#include "ppb_message_loop.h"
+#include "ppb_url_loader.h"
+#include "ppb_url_request_info.h"
+#include "ppb_url_response_info.h"
 #include "ppb_url_util.h"
 #include "ppb_var.h"
-#include "ppb_message_loop.h"
-#include <ppapi/c/pp_errors.h>
-#include <stdlib.h>
-#include <pthread.h>
-#include <unistd.h>
-#include <inttypes.h>
-#include <string.h>
-#include <stdio.h>
-#include "trace.h"
-#include "pp_resource.h"
+#include "static_assert.h"
 #include "tables.h"
-#include "eintr_retry.h"
-#include "ppb_url_request_info.h"
-#include "config.h"
-#include "pp_interface.h"
+#include "trace_core.h"
+#include "utils.h"
+#include <fcntl.h>
+#include <inttypes.h>
+#include <ppapi/c/pp_errors.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
+STATIC_ASSERT(sizeof(struct pp_url_loader_s) <= LARGEST_RESOURCE_SIZE);
 
 PP_Resource
 ppb_url_loader_create(PP_Instance instance)
@@ -138,41 +144,33 @@ url_loader_open_ptac(void *user_data)
 
     if (p->method == PP_METHOD_POST) {
         // POST request
-        char   *tmpfname;
-        int     fd;
-        FILE   *fp = NULL;
-        int     need_newline = 0;
 
-        tmpfname = g_strdup_printf("/tmp/FreshPostBodyXXXXXX");    // TODO: make configurable
-
-        fd = mkstemp(tmpfname);
-        if (fd < 0) {
+        int need_newline = 0;
+        GString *buf = g_string_new(NULL);
+        if (!buf) {
             p->retval = NPERR_GENERIC_ERROR;
-            goto err;
-        }
-
-        fp = fdopen(fd, "wb+");
-        if (!fp) {
-            close(fd);
-            p->retval = NPERR_GENERIC_ERROR;
-            goto err;
+            goto quit;
         }
 
         if (p->request_headers) {
-            fprintf(fp, "%s\n", p->request_headers);
+            g_string_append_printf(buf, "%s\r\n", p->request_headers);
             need_newline = 1;
         }
+
         if (p->custom_referrer_url) {
             // the header name should be "referer", that's how it's spelled in HTTP spec
-            fprintf(fp, "Referer: %s\n", p->custom_referrer_url);
+            g_string_append_printf(buf, "Referer: %s\r\n", p->custom_referrer_url);
             need_newline = 1;
         }
+
         if (p->custom_content_transfer_encoding) {
-            fprintf(fp, "Content-Transfer-Encoding: %s\n", p->custom_content_transfer_encoding);
+            g_string_append_printf(buf, "Content-Transfer-Encoding: %s\r\n",
+                                   p->custom_content_transfer_encoding);
             need_newline = 1;
         }
+
         if (p->custom_user_agent) {
-            fprintf(fp, "User-Agent: %s\n", p->custom_user_agent);
+            g_string_append_printf(buf, "User-Agent: %s\r\n", p->custom_user_agent);
             need_newline = 1;
         }
 
@@ -185,39 +183,43 @@ url_loader_open_ptac(void *user_data)
             }
 
             if (post_len > 0) {
-                fprintf(fp, "Content-Length: %"PRIu64"\n", (uint64_t)post_len);
+                g_string_append_printf(buf, "Content-Length: %"PRIu64"\r\n", (uint64_t)post_len);
                 need_newline = 1;
             }
         }
 
         if (need_newline)
-            fprintf(fp, "\n");
+            g_string_append(buf, "\r\n");
 
         if (p->post_data) {
             for (guint k = 0; k < p->post_data->len; k ++)
-                post_data_write_to_fp(p->post_data, k, fp);
+                post_data_write_to_gstring(p->post_data, k, buf);
         }
-
-        fclose(fp); // flush all unwritten data and close the file
-        fp = NULL;  // avoid calling fclose() twice
 
         if (p->target) {
-            p->retval = npn.posturl(pp_i->npp, p->url, p->target, strlen(tmpfname), tmpfname, true);
+            p->retval = npn.posturl(pp_i->npp, p->url, p->target, buf->len, buf->str, false);
+            if (p->retval != NPERR_NO_ERROR)
+                trace_error("%s, NPN_PostURL returned %d\n", __func__, p->retval);
+
         } else {
-            p->retval = npn.posturlnotify(pp_i->npp, p->url, NULL, strlen(tmpfname), tmpfname, true,
+            p->retval = npn.posturlnotify(pp_i->npp, p->url, NULL, buf->len, buf->str, false,
                                           (void*)(size_t)p->loader);
+            if (p->retval != NPERR_NO_ERROR)
+                trace_error("%s, NPN_PostURLNotify returned %d\n", __func__, p->retval);
         }
 err:
-        if (fp)
-            fclose(fp);
-        unlink(tmpfname);
-        g_free(tmpfname);
+        g_string_free(buf, TRUE);
+
     } else {
         // GET request
         if (p->target) {
             p->retval = npn.geturl(pp_i->npp, p->url, p->target);
+            if (p->retval != NPERR_NO_ERROR)
+                trace_warning("%s, NPN_GetUrl returned %d\n", __func__, p->retval);
         } else {
             p->retval = npn.geturlnotify(pp_i->npp, p->url, NULL, (void*)(size_t)p->loader);
+            if (p->retval != NPERR_NO_ERROR)
+                trace_warning("%s, NPN_GetUrlNotify returned %d\n", __func__, p->retval);
         }
     }
 

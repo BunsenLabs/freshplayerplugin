@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013-2015  Rinat Ibragimov
+ * Copyright © 2013-2017  Rinat Ibragimov
  *
  * This file is part of FreshPlayerPlugin.
  *
@@ -22,13 +22,9 @@
  * SOFTWARE.
  */
 
-#ifndef FPP_COMPAT_H
-#define FPP_COMPAT_H
+#pragma once
 
 #include <glib.h>
-#include <gtk/gtk.h>
-#include <gdk/gdk.h>
-#include <X11/Xlib.h>
 
 #ifdef VER
 #error macro name collision
@@ -55,14 +51,4 @@ void
 g_list_free_full(GList *list, GDestroyNotify free_func);
 #endif
 
-#if (GTK_MAJOR_VERSION * 1000 + GTK_MINOR_VERSION < 2 * 1000 + 24)
-GdkWindow *
-gdk_x11_window_lookup_for_display(GdkDisplay *gdpy, Window wnd);
-
-GdkWindow *
-gdk_x11_window_foreign_new_for_display(GdkDisplay *gdpy, Window wnd);
-#endif
-
 #undef VER
-
-#endif // FPP_COMPAT_H

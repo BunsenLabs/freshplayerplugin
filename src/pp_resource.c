@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013-2015  Rinat Ibragimov
+ * Copyright © 2013-2017  Rinat Ibragimov
  *
  * This file is part of FreshPlayerPlugin.
  *
@@ -22,20 +22,24 @@
  * SOFTWARE.
  */
 
-#include "pp_resource.h"
-#include "tables.h"
-#include "trace.h"
 #include "config.h"
-#include <pthread.h>
+#include "pp_resource.h"
+#include "trace_core.h"
 #include <glib.h>
+#include <ppapi/c/pp_resource.h>
+#include <pthread.h>
 #include <stdlib.h>
+#include <time.h>
 #include <unistd.h>
-
 
 static GHashTable      *res_tbl;
 static GHashTable      *destructors_ht = NULL;
 static int              res_tbl_next = 0;
 static pthread_mutex_t  res_tbl_lock = PTHREAD_MUTEX_INITIALIZER;
+
+struct pp_resource_generic_s {
+    COMMON_STRUCTURE_FIELDS
+};
 
 static
 __attribute__((constructor))
@@ -51,7 +55,7 @@ constructor_pp_resource(void)
 PP_Resource
 pp_resource_allocate(enum pp_resource_type_e type, struct pp_instance_s *instance)
 {
-    struct pp_resource_generic_s *res = g_slice_alloc0(sizeof(union pp_largest_u));
+    struct pp_resource_generic_s *res = g_slice_alloc0(LARGEST_RESOURCE_SIZE);
     res->resource_type = type;
     res->ref_cnt = 1;
     pthread_mutex_init(&res->lock, NULL);
@@ -71,7 +75,7 @@ pp_resource_expunge(PP_Resource resource)
     pthread_mutex_lock(&res_tbl_lock);
     void *ptr = g_hash_table_lookup(res_tbl, GINT_TO_POINTER(resource));
     if (ptr) {
-        g_slice_free(union pp_largest_u, ptr);
+        g_slice_free1(LARGEST_RESOURCE_SIZE, ptr);
         g_hash_table_remove(res_tbl, GINT_TO_POINTER(resource));
     }
     pthread_mutex_unlock(&res_tbl_lock);
@@ -191,7 +195,7 @@ pp_resource_unref(PP_Resource resource)
             trace_error("%s, no destructor for type %d\n", __func__, ptr->resource_type);
 
         // finally, free memory occupied by resource
-        g_slice_free1(sizeof(union pp_largest_u), ptr);
+        g_slice_free1(LARGEST_RESOURCE_SIZE, ptr);
     }
 
     if (config.quirks.dump_resource_histogram) {

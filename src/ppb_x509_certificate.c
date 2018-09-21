@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013-2015  Rinat Ibragimov
+ * Copyright © 2013-2017  Rinat Ibragimov
  *
  * This file is part of FreshPlayerPlugin.
  *
@@ -22,16 +22,29 @@
  * SOFTWARE.
  */
 
-#include "ppb_x509_certificate.h"
-#include "ppb_var.h"
-#include <stdlib.h>
-#include "trace.h"
-#include "tables.h"
-#include "reverse_constant.h"
-#include <openssl/x509.h>
-#include <ctype.h>
 #include "pp_interface.h"
+#include "pp_resource.h"
+#include "ppb_var.h"
+#include "ppb_x509_certificate.h"
+#include "reverse_constant.h"
+#include "static_assert.h"
+#include "tables.h"
+#include "trace_core.h"
+#include "utils.h"
+#include <ctype.h>
+#include <openssl/x509.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
 
+struct pp_x509_certificate_s {
+    COMMON_STRUCTURE_FIELDS
+    X509           *cert;
+    char           *raw_data;
+    uint32_t        raw_data_length;
+};
+
+STATIC_ASSERT(sizeof(struct pp_x509_certificate_s) <= LARGEST_RESOURCE_SIZE);
 
 PP_Resource
 ppb_x509_certificate_create(PP_Instance instance)
@@ -50,10 +63,13 @@ void
 ppb_x509_certificate_destroy(void *ptr)
 {
     struct pp_x509_certificate_s *xc = ptr;
+
     if (xc->cert) {
         X509_free(xc->cert);
         xc->cert = NULL;
     }
+
+    free(xc->raw_data);
 }
 
 PP_Bool
@@ -65,14 +81,14 @@ ppb_x509_certificate_is_x509_certificate(PP_Resource resource)
 PP_Bool
 ppb_x509_certificate_initialize(PP_Resource resource, const char *bytes, uint32_t length)
 {
-    const unsigned char **in = (const unsigned char **)&bytes;
+    const unsigned char *in = (const unsigned char *)bytes;
     struct pp_x509_certificate_s *xc = pp_resource_acquire(resource, PP_RESOURCE_X509_CERTIFICATE);
     if (!xc) {
         return PP_FALSE;
     }
 
     PP_Bool retval = PP_TRUE;
-    if (d2i_X509(&xc->cert, in, length) == NULL) {
+    if (d2i_X509(&xc->cert, &in, length) == NULL) {
         retval = PP_FALSE;
         goto done;
     }

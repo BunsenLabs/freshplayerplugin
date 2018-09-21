@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013-2015  Rinat Ibragimov
+ * Copyright © 2013-2017  Rinat Ibragimov
  *
  * This file is part of FreshPlayerPlugin.
  *
@@ -22,11 +22,9 @@
  * SOFTWARE.
  */
 
-#ifndef FPP_PPB_VIDEO_DECODER_DEV_H
-#define FPP_PPB_VIDEO_DECODER_DEV_H
+#pragma once
 
 #include <ppapi/c/dev/ppb_video_decoder_dev.h>
-
 
 PP_Resource
 ppb_video_decoder_create(PP_Instance instance, PP_Resource context,
@@ -55,5 +53,3 @@ ppb_video_decoder_reset(PP_Resource video_decoder, struct PP_CompletionCallback 
 
 void
 ppb_video_decoder_destroy(PP_Resource video_decoder);
-
-#endif // FPP_PPB_VIDEO_DECODER_DEV_H

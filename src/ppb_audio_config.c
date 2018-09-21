@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013-2015  Rinat Ibragimov
+ * Copyright © 2013-2017  Rinat Ibragimov
  *
  * This file is part of FreshPlayerPlugin.
  *
@@ -22,13 +22,15 @@
  * SOFTWARE.
  */
 
-#include "ppb_audio_config.h"
-#include <stdlib.h>
-#include "trace.h"
-#include "tables.h"
-#include "pp_resource.h"
 #include "pp_interface.h"
+#include "pp_resource.h"
+#include "ppb_audio_config.h"
+#include "static_assert.h"
+#include "tables.h"
+#include "trace_core.h"
+#include <glib.h>
 
+STATIC_ASSERT(sizeof(struct pp_audio_config_s) <= LARGEST_RESOURCE_SIZE);
 
 PP_Resource
 ppb_audio_config_create_stereo_16_bit(PP_Instance instance, PP_AudioSampleRate sample_rate,

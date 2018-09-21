@@ -1,3 +1,32 @@
+2017-12-23  Rinat Ibragimov  <ibragimovrinat@mail.ru>
+
+	* release v0.3.9
+	* network: stop using files with NPN_PostURL
+
+2017-12-09  Rinat Ibragimov  <ibragimovrinat@mail.ru>
+
+	* release: v0.3.8
+	* misc: add NPN_PluginThreadAsyncCall emulation for Firefox 58
+
+2017-05-31  Rinat Ibragimov  <ibragimovrinat@mail.ru>
+
+	* release: v0.3.7
+	* graphics: add more fullscreen _NET_WM controls
+	* misc: drop libpdf wrapper
+	* misc: drop NaCl wrapper
+	* misc: search for PepperFlash in Chrome component update
+	directories
+
+2016-10-05  Rinat Ibragimov  <ibragimovrinat@mail.ru>
+
+	* release: v0.3.6
+	* graphics: fix off-by-one pixel issue in fullscreen scaling mode
+	* graphics: try to flicker less
+	* misc: use ICU for character set conversion, use WhatWG canonical
+	encoding name conversion
+	* misc: guess default character encoding from locale name
+	* misc: guess GTK+ major version at run time
+
 2016-04-12  Rinat Ibragimov  <ibragimovrinat@mail.ru>
 
 	* release v0.3.5

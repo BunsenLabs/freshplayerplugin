@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013-2015  Rinat Ibragimov
+ * Copyright © 2013-2017  Rinat Ibragimov
  *
  * This file is part of FreshPlayerPlugin.
  *
@@ -22,56 +22,43 @@
  * SOFTWARE.
  */
 
+#include "compat.h"
+#include "config.h"
+#include "config_priv.h"
+#include "gtk_wrapper.h"
+#include "main_thread.h"
+#include "np_asynccall.h"
+#include "pp_interface.h"
+#include "ppb_core.h"
+#include "ppb_instance.h"
+#include "ppb_message_loop.h"
+#include "reverse_constant.h"
+#include "tables.h"
+#include "trace_core.h"
+#include "utils.h"
+#include <X11/Xlib.h>
 #include <dlfcn.h>
+#include <glib.h>
 #include <npapi/npapi.h>
 #include <npapi/npfunctions.h>
-#include <string.h>
-#include <ppapi/c/ppb.h>
+#include <ppapi/c/pp_bool.h>
 #include <ppapi/c/pp_errors.h>
 #include <ppapi/c/pp_module.h>
-#include <parson/parson.h>
-#include <libgen.h>
-#include "trace.h"
-#include "tables.h"
-#include "config.h"
-#include "reverse_constant.h"
-#include "pp_interface.h"
-#include <glib.h>
-#include "compat.h"
-#include "np_entry.h"
-#include "ppb_message_loop.h"
-#include "tables.h"
-#include "main_thread.h"
-#include "ppb_core.h"
-
+#include <ppapi/c/pp_resource.h>
+#include <ppapi/c/ppb.h>
+#include <pthread.h>
+#include <signal.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/types.h>
+#include <time.h>
+#include <unistd.h>
 
 static void *module_dl_handler;
-static gchar *module_version;
-static gchar *module_descr;
-static GList *tried_files = NULL;
-static gchar *module_file_name = NULL;
 static struct pp_instance_s *aux_instance = NULL;
 static int np_initialize_was_called = 0;
-
-static
-void
-use_fallback_version_strings(void)
-{
-    module_version = g_strdup(fpp_config_get_default_plugin_version());
-    module_descr = g_strdup(fpp_config_get_default_plugin_descr());
-}
-
-GList *
-np_entry_get_tried_plugin_files(void)
-{
-    return tried_files;
-}
-
-gchar *
-np_entry_get_module_file_name(void)
-{
-    return module_file_name;
-}
 
 struct call_plugin_init_module_param_s {
     PP_Resource     m_loop;
@@ -130,125 +117,18 @@ call_plugin_init_module(void)
     return res;
 }
 
-static
-int
-file_exists_and_is_regular_and_readable(const char *fname)
-{
-    struct stat sb;
-    int ret = lstat(fname, &sb);
-
-    // should exist
-    if (ret != 0)
-        return 0;
-
-    // should be a regular file
-    if (!S_ISREG(sb.st_mode))
-        return 0;
-
-    // should be readable
-    if (!(sb.st_mode & 0444))
-        return 0;
-
-    return 1;
-}
-
-static
-uintptr_t
-do_probe_ppp_module(const char *fname)
-{
-    tried_files = g_list_prepend(tried_files, g_strdup(fname));
-
-    if (!file_exists_and_is_regular_and_readable(fname))
-        return 1;
-
-    g_free(module_file_name);
-    module_file_name = g_strdup(fname);
-
-    if (!fpp_config_plugin_has_manifest()) {
-        use_fallback_version_strings();
-        return 0;
-    }
-
-    // try to read manifest.json file (only for those who can have it)
-    char *manifest_dir = strdup(fname);
-    gchar *manifest_path = g_strdup_printf("%s/manifest.json", dirname(manifest_dir));
-    free(manifest_dir);
-
-    JSON_Value *root_val = json_parse_file(manifest_path);
-    g_free(manifest_path);
-    if (!root_val) {
-        use_fallback_version_strings();
-        return 0;
-    }
-
-    JSON_Object *root_obj = json_value_get_object(root_val);
-    const char *version = json_object_get_string(root_obj, "version");
-    if (version) {
-        int v1 = 0, v2 = 0, v3 = 0, v4 = 0;
-        module_version = g_strdup(version);
-        (void)sscanf(module_version, "%9d.%9d.%9d.%9d", &v1, &v2, &v3, &v4);
-        module_descr = g_strdup_printf("%s %d.%d r%d", fpp_config_get_plugin_name(), v1, v2, v3);
-    } else {
-        use_fallback_version_strings();
-    }
-
-    json_value_free(root_val);
-    return 0;
-}
-
-static
-int
+static int
 probe_ppp_module(void)
 {
     fpp_config_initialize();
 
-    if (tried_files) {
-        g_list_free_full(tried_files, g_free);
-        tried_files = NULL;
+    if (!fpp_config_get_plugin_path()) {
+        config.quirks.plugin_missing = 1;
+        trace_error("%s, can't find %s\n", __func__, fpp_config_get_plugin_file_name());
+        return 1;
     }
 
-    if (fpp_config_get_plugin_path()) {
-        const char *ptr = fpp_config_get_plugin_path();
-        const char *last = strchr(ptr, ':');
-        uintptr_t   ret;
-
-        // parse ':'-separated list
-        while (last != NULL) {
-            // try entries one by one
-            char *entry = strndup(ptr, last - ptr);
-            ret = do_probe_ppp_module(entry);
-            free(entry);
-            if (ret == 0)
-                return 0;
-
-            ptr = last + 1;
-            last = strchr(ptr, ':');
-        }
-
-        // and the last entry
-        ret = do_probe_ppp_module(ptr);
-        if (ret == 0)
-            return 0;
-
-        goto failure;
-    }
-
-    // try all paths
-    const char **path_list = fpp_config_get_plugin_path_list();
-    while (*path_list) {
-        gchar *fname = g_strdup_printf("%s/%s", *path_list, fpp_config_get_plugin_file_name());
-        uintptr_t ret = do_probe_ppp_module(fname);
-        g_free(fname);
-        if (ret == 0)
-            return 0;
-        path_list ++;
-    }
-
-failure:
-    config.quirks.plugin_missing = 1;
-    use_fallback_version_strings();
-    trace_error("%s, can't find %s\n", __func__, fpp_config_get_plugin_file_name());
-    return 1;
+    return 0;
 }
 
 static
@@ -261,16 +141,13 @@ load_ppp_module()
     }
 
     // ensure we have a module name
-    if (!module_file_name) {
-        if (probe_ppp_module() != 0)
-            goto err;
-        if (!module_file_name)
-            goto err;
-    }
+    probe_ppp_module();
+    if (!fpp_config_get_plugin_path())
+        goto err;
 
-    module_dl_handler = dlopen(module_file_name, RTLD_LAZY);
+    module_dl_handler = dlopen(fpp_config_get_plugin_path(), RTLD_LAZY);
     if (!module_dl_handler) {
-        trace_info_f("%s, can't open %s\n", __func__, module_file_name);
+        trace_info_f("%s, can't open %s\n", __func__, fpp_config_get_plugin_path());
         goto err;
     }
 
@@ -370,14 +247,6 @@ static
 void
 unload_ppp_module(void)
 {
-    g_free(module_descr); module_descr = NULL;
-    g_free(module_version); module_version = NULL;
-    g_free(module_file_name); module_file_name = NULL;
-    if (tried_files) {
-        g_list_free_full(tried_files, g_free);
-        tried_files = NULL;
-    }
-
     // call module shutdown handler if exists
     call_plugin_shutdown_module();
 
@@ -401,7 +270,7 @@ NP_GetPluginVersion(void)
 {
     trace_info_f("[NP] %s\n", __func__);
     probe_ppp_module();
-    return module_version;
+    return (char *)fpp_config_get_plugin_version();
 }
 
 NPError
@@ -417,7 +286,7 @@ NP_GetValue(void *instance, NPPVariable variable, void *value)
         *(const char **)value = fpp_config_get_plugin_name();
         break;
     case NPPVpluginDescriptionString:
-        *(char **)value = module_descr;
+        *(const char **)value = fpp_config_get_plugin_descr();
         break;
     default:
         trace_info_z("    not implemented variable %d\n", variable);
@@ -523,6 +392,14 @@ NP_Initialize(NPNetscapeFuncs *aNPNFuncs, NPPluginFuncs *aNPPFuncs)
     np_initialize_was_called = 1;
 
     setup_sig_handlers();
+    gtk_wrapper_initialize();
+
+    if (!gw_gtk_available()) {
+        trace_error("no GTK+ loaded\n");
+        return NPERR_NO_ERROR;
+    }
+
+    trace_info_f("found GTK+ %d.%d\n", gw_major_version(), gw_minor_version());
 
     // set logging-only error handler.
     // Ignore a previous one, we have no plans to restore it
@@ -531,6 +408,18 @@ NP_Initialize(NPNetscapeFuncs *aNPNFuncs, NPPluginFuncs *aNPPFuncs)
 
     memset(&npn, 0, sizeof(npn));
     memcpy(&npn, aNPNFuncs, sizeof(npn) < aNPNFuncs->size ? sizeof(npn) : aNPNFuncs->size);
+
+    if (npn.pluginthreadasynccall == NULL) {
+        trace_info_f("browser have npn.pluginthreadasynccall == NULL\n");
+        if (np_asynccall_initialize() != 0) {
+            trace_error("can't initialize async call emulation\n");
+
+            // It's required, can't continue.
+            return NPERR_GENERIC_ERROR;
+        }
+
+        npn.pluginthreadasynccall = np_asynccall_call;
+    }
 
     NPPluginFuncs pf;
     memset(&pf, 0, sizeof(NPPluginFuncs));

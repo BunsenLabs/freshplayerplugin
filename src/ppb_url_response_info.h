@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013-2015  Rinat Ibragimov
+ * Copyright © 2013-2017  Rinat Ibragimov
  *
  * This file is part of FreshPlayerPlugin.
  *
@@ -22,11 +22,16 @@
  * SOFTWARE.
  */
 
-#ifndef FPP_PPB_URL_RESPONSE_INFO_H
-#define FPP_PPB_URL_RESPONSE_INFO_H
+#pragma once
 
+#include "pp_resource.h"
 #include <ppapi/c/ppb_url_response_info.h>
 
+struct pp_url_response_info_s {
+    COMMON_STRUCTURE_FIELDS
+    PP_Resource                 url_loader_id;
+    struct pp_url_loader_s     *url_loader;
+};
 
 PP_Bool
 ppb_url_response_info_is_url_response_info(PP_Resource resource);
@@ -36,5 +41,3 @@ ppb_url_response_info_get_property(PP_Resource response, PP_URLResponseProperty 
 
 PP_Resource
 ppb_url_response_info_get_body_as_file_ref(PP_Resource response);
-
-#endif // FPP_PPB_URL_RESPONSE_INFO_H

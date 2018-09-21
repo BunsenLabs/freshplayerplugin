@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013-2015  Rinat Ibragimov
+ * Copyright © 2013-2017  Rinat Ibragimov
  *
  * This file is part of FreshPlayerPlugin.
  *
@@ -22,12 +22,10 @@
  * SOFTWARE.
  */
 
-#include "ppb_memory.h"
-#include <stdlib.h>
-#include "trace.h"
-#include "tables.h"
 #include "pp_interface.h"
-
+#include "ppb_memory.h"
+#include "tables.h"
+#include "trace_core.h"
 
 void *
 ppb_memory_mem_alloc(uint32_t num_bytes)

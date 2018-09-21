@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013-2015  Rinat Ibragimov
+ * Copyright © 2013-2017  Rinat Ibragimov
  *
  * This file is part of FreshPlayerPlugin.
  *
@@ -22,23 +22,22 @@
  * SOFTWARE.
  */
 
-#ifndef FPP_REVERSE_CONSTANT_H
-#define FPP_REVERSE_CONSTANT_H
+#pragma once
 
 #include <npapi/npapi.h>
-#include <ppapi/c/ppb_url_response_info.h>
-#include <ppapi/c/ppb_url_request_info.h>
-#include <ppapi/c/dev/ppb_text_input_dev.h>
-#include <ppapi/c/dev/ppb_char_set_dev.h>
-#include <ppapi/c/private/ppb_flash.h>
-#include <ppapi/c/ppb_image_data.h>
-#include <ppapi/c/private/ppb_flash_clipboard.h>
-#include <ppapi/c/private/ppb_udp_socket_private.h>
 #include <ppapi/c/dev/pp_video_dev.h>
+#include <ppapi/c/dev/ppb_char_set_dev.h>
 #include <ppapi/c/dev/ppb_file_chooser_dev.h>
-#include <ppapi/c/private/ppb_x509_certificate_private.h>
+#include <ppapi/c/dev/ppb_text_input_dev.h>
+#include <ppapi/c/ppb_image_data.h>
+#include <ppapi/c/ppb_url_request_info.h>
+#include <ppapi/c/ppb_url_response_info.h>
+#include <ppapi/c/private/pp_private_font_charset.h>
+#include <ppapi/c/private/ppb_flash.h>
+#include <ppapi/c/private/ppb_flash_clipboard.h>
 #include <ppapi/c/private/ppb_pdf.h>
-
+#include <ppapi/c/private/ppb_udp_socket_private.h>
+#include <ppapi/c/private/ppb_x509_certificate_private.h>
 
 const char *reverse_npp_variable(NPPVariable var);
 const char *reverse_npn_variable(NPNVariable var);
@@ -59,5 +58,3 @@ const char *reverse_x509_certificate_field(PP_X509Certificate_Private_Field fiel
 const char *reverse_pdf_feature(PP_PDFFeature feature);
 const char *reverse_private_font_charset(PP_PrivateFontCharset charset);
 const char *reverse_graphics3d_attribute(int32_t attr);
-
-#endif // FPP_REVERSE_CONSTANT_H

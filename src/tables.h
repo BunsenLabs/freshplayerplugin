@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013-2015  Rinat Ibragimov
+ * Copyright © 2013-2017  Rinat Ibragimov
  *
  * This file is part of FreshPlayerPlugin.
  *
@@ -22,26 +22,26 @@
  * SOFTWARE.
  */
 
-#ifndef FPP_TABLES_H
-#define FPP_TABLES_H
+#pragma once
 
-#include <pthread.h>
-#include <ppapi/c/pp_var.h>
-#include <ppapi/c/trusted/ppb_browser_font_trusted.h>
-#include "pp_resource.h"
-#include <npapi/npruntime.h>
+#include "glx.h"
+#include <ppapi/c/pp_instance.h>
+#include <X11/Xlib.h>
+#include <X11/extensions/Xrender.h>
+#include <npapi/npapi.h>
 #include <npapi/npfunctions.h>
+#include <npapi/npruntime.h>
+#include <pango/pango.h>
+#include <pthread.h>
+#include <stdint.h>
 
 #if HAVE_HWDEC
 #include <va/va.h>
-#include <va/va_x11.h>
 #include <vdpau/vdpau.h>
 #include <vdpau/vdpau_x11.h>
 #endif // HAVE_HWDEC
 
-
 #define NPString_literal(str) { .UTF8Characters = str, .UTF8Length = strlen(str) }
-
 
 typedef GLXContext
 (*glx_create_context_attribs_arb_f)(Display *dpy, GLXFBConfig config,
@@ -129,5 +129,3 @@ void    tables_remove_npobj_npp_mapping(NPObject *npobj);
 
 int     tables_open_display(void);
 void    tables_close_display(void);
-
-#endif // FPP_TABLES_H

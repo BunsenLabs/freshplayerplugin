@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013-2015  Rinat Ibragimov
+ * Copyright © 2013-2017  Rinat Ibragimov
  *
  * This file is part of FreshPlayerPlugin.
  *
@@ -22,18 +22,27 @@
  * SOFTWARE.
  */
 
-#include "ppb_graphics2d.h"
-#include "ppb_core.h"
-#include <pthread.h>
-#include <ppapi/c/pp_errors.h>
-#include <stdlib.h>
-#include "trace.h"
-#include "tables.h"
 #include "config.h"
-#include "pp_resource.h"
 #include "pp_interface.h"
+#include "pp_resource.h"
+#include "ppb_core.h"
+#include "ppb_graphics2d.h"
+#include "ppb_image_data.h"
+#include "ppb_instance.h"
 #include "ppb_message_loop.h"
+#include "static_assert.h"
+#include "tables.h"
+#include "trace_core.h"
+#include "trace_helpers.h"
+#include "utils.h"
+#include <X11/extensions/Xrender.h>
+#include <cairo.h>
+#include <ppapi/c/pp_errors.h>
+#include <pthread.h>
+#include <stdlib.h>
+#include <string.h>
 
+STATIC_ASSERT(sizeof(struct pp_graphics2d_s) <= LARGEST_RESOURCE_SIZE);
 
 struct g2d_paint_task_s {
     enum g2d_paint_task_type_e {
@@ -63,6 +72,7 @@ ppb_graphics2d_create(PP_Instance instance, const struct PP_Size *size, PP_Bool 
 
     g2d->is_always_opaque = is_always_opaque;
     g2d->scale = config.device_scale;
+    g2d->external_scale = 1.0;
     g2d->width =  size->width;
     g2d->height = size->height;
     g2d->stride = 4 * size->width;
@@ -347,7 +357,9 @@ ppb_graphics2d_set_scale(PP_Resource resource, float scale)
         return PP_ERROR_BADRESOURCE;
     }
 
+    g2d->external_scale = scale;
     g2d->scale = scale * config.device_scale;
+
     g2d->scaled_width = g2d->width * g2d->scale + 0.5;
     g2d->scaled_height = g2d->height * g2d->scale + 0.5;
     g2d->scaled_stride = 4 * g2d->scaled_width;
@@ -369,7 +381,7 @@ ppb_graphics2d_get_scale(PP_Resource resource)
         return PP_ERROR_BADRESOURCE;
     }
 
-    float scale = g2d->scale / config.device_scale;
+    float scale = g2d->external_scale;
     pp_resource_release(resource);
     return scale;
 }
