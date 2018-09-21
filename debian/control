@@ -30,7 +30,7 @@ Build-Depends: debhelper (>= 9),
                libavutil-dev,
                libva-dev,
                libvdpau-dev
-Standards-Version: 3.9.7
+Standards-Version: 4.2.1
 Vcs-Browser: https://anonscm.debian.org/gitweb/?p=collab-maint/freshplayerplugin.git
 Vcs-Git: https://anonscm.debian.org/collab-maint/freshplayerplugin.git
 Homepage: https://github.com/i-rinat/freshplayerplugin
