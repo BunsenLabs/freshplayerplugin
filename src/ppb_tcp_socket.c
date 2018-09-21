@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013-2015  Rinat Ibragimov
+ * Copyright © 2013-2017  Rinat Ibragimov
  *
  * This file is part of FreshPlayerPlugin.
  *
@@ -22,19 +22,19 @@
  * SOFTWARE.
  */
 
-#include "ppb_tcp_socket.h"
-#include <stdlib.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <ppapi/c/pp_errors.h>
-#include "ppb_core.h"
-#include "trace.h"
-#include "tables.h"
-#include "pp_resource.h"
 #include "async_network.h"
 #include "pp_interface.h"
+#include "pp_resource.h"
 #include "ppb_message_loop.h"
+#include "ppb_tcp_socket.h"
+#include "static_assert.h"
+#include "tables.h"
+#include "trace_core.h"
+#include "utils.h"
+#include <ppapi/c/pp_errors.h>
+#include <sys/socket.h>
 
+STATIC_ASSERT(sizeof(struct pp_tcp_socket_s) <= LARGEST_RESOURCE_SIZE);
 
 PP_Resource
 ppb_tcp_socket_create(PP_Instance instance)

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013-2015  Rinat Ibragimov
+ * Copyright © 2013-2017  Rinat Ibragimov
  *
  * This file is part of FreshPlayerPlugin.
  *
@@ -22,13 +22,15 @@
  * SOFTWARE.
  */
 
-#ifndef FPP_P2N_PROXY_CLASS_H
-#define FPP_P2N_PROXY_CLASS_H
+#pragma once
 
 #include <npapi/npapi.h>
 #include <npapi/npruntime.h>
+#include <ppapi/c/pp_var.h>
 
+struct np_proxy_object_s {
+    NPObject npobj;
+    struct PP_Var ppobj;
+};
 
 extern struct NPClass p2n_proxy_class;
-
-#endif // FPP_P2N_PROXY_CLASS_H

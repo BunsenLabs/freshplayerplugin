@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013-2015  Rinat Ibragimov
+ * Copyright © 2013-2017  Rinat Ibragimov
  *
  * This file is part of FreshPlayerPlugin.
  *
@@ -22,12 +22,10 @@
  * SOFTWARE.
  */
 
-#ifndef FPP_PPB_FLASH_FILE_H
-#define FPP_PPB_FLASH_FILE_H
+#pragma once
 
 #include <ppapi/c/dev/deprecated_bool.h>
 #include <ppapi/c/private/ppb_flash_file.h>
-
 
 int32_t
 ppb_flash_file_file_ref_open_file(PP_Resource file_ref_id, int32_t mode, PP_FileHandle *file);
@@ -70,6 +68,3 @@ ppb_flash_file_modulelocal_free_dir_contents(PP_Instance instance,
 
 int32_t
 ppb_flash_file_modulelocal_create_temporary_file(PP_Instance instance, PP_FileHandle *file);
-
-
-#endif // FPP_PPB_FLASH_FILE_H

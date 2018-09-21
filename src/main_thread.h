@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013-2015  Rinat Ibragimov
+ * Copyright © 2013-2017  Rinat Ibragimov
  *
  * This file is part of FreshPlayerPlugin.
  *
@@ -22,11 +22,7 @@
  * SOFTWARE.
  */
 
-#ifndef FPP_MAIN_THREAD_H
-#define FPP_MAIN_THREAD_H
-
+#pragma once
 
 void *
 fresh_wrapper_main_thread(void *p);
-
-#endif // FPP_MAIN_THREAD_H

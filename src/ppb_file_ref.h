@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013-2015  Rinat Ibragimov
+ * Copyright © 2013-2017  Rinat Ibragimov
  *
  * This file is part of FreshPlayerPlugin.
  *
@@ -22,11 +22,22 @@
  * SOFTWARE.
  */
 
-#ifndef FPP_PPB_FILE_REF_H
-#define FPP_PPB_FILE_REF_H
+#pragma once
 
+#include "pp_resource.h"
 #include <ppapi/c/ppb_file_ref.h>
 
+enum file_ref_type_e {
+    PP_FILE_REF_TYPE_NAME,
+    PP_FILE_REF_TYPE_FD,
+};
+
+struct pp_file_ref_s {
+    COMMON_STRUCTURE_FIELDS
+    int                     fd;
+    char                   *path;
+    enum file_ref_type_e    type;
+};
 
 PP_Resource
 ppb_file_ref_create(PP_Resource file_system, const char *path);
@@ -74,5 +85,3 @@ ppb_file_ref_query(PP_Resource file_ref, struct PP_FileInfo *info,
 int32_t
 ppb_file_ref_read_directory_entries(PP_Resource file_ref, struct PP_ArrayOutput output,
                                     struct PP_CompletionCallback callback);
-
-#endif // FPP_PPB_FILE_REF_H

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013-2015  Rinat Ibragimov
+ * Copyright © 2013-2017  Rinat Ibragimov
  *
  * This file is part of FreshPlayerPlugin.
  *
@@ -22,17 +22,12 @@
  * SOFTWARE.
  */
 
-#include "ppb_crypto.h"
-#include <fcntl.h>
-#include <stdlib.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#include <time.h>
-#include "trace.h"
-#include "tables.h"
 #include "pp_interface.h"
-
+#include "ppb_crypto.h"
+#include "tables.h"
+#include "trace_core.h"
+#include <stdlib.h>
+#include <unistd.h>
 
 void
 ppb_crypto_get_random_bytes(char *buffer, uint32_t num_bytes)

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013-2015  Rinat Ibragimov
+ * Copyright © 2013-2017  Rinat Ibragimov
  *
  * This file is part of FreshPlayerPlugin.
  *
@@ -22,12 +22,8 @@
  * SOFTWARE.
  */
 
-#ifndef FPP_N2P_PROXY_CLASS_H
-#define FPP_N2P_PROXY_CLASS_H
+#pragma once
 
 #include <ppapi/c/dev/ppp_class_deprecated.h>
 
-
 extern const struct PPP_Class_Deprecated n2p_proxy_class;
-
-#endif // FPP_N2P_PROXY_CLASS_H

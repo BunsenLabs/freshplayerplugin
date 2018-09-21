@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013-2015  Rinat Ibragimov
+ * Copyright © 2013-2017  Rinat Ibragimov
  *
  * This file is part of FreshPlayerPlugin.
  *
@@ -22,11 +22,9 @@
  * SOFTWARE.
  */
 
-#ifndef FPP_PPB_FLASH_MESSAGE_LOOP_H
-#define FPP_PPB_FLASH_MESSAGE_LOOP_H
+#pragma once
 
 #include <ppapi/c/private/ppb_flash_message_loop.h>
-
 
 PP_Resource
 ppb_flash_message_loop_create(PP_Instance instance);
@@ -39,5 +37,3 @@ ppb_flash_message_loop_run(PP_Resource flash_message_loop);
 
 void
 ppb_flash_message_loop_quit(PP_Resource flash_message_loop);
-
-#endif // FPP_PPB_FLASH_MESSAGE_LOOP_H

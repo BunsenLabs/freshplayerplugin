@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013-2015  Rinat Ibragimov
+ * Copyright © 2013-2017  Rinat Ibragimov
  *
  * This file is part of FreshPlayerPlugin.
  *
@@ -22,11 +22,17 @@
  * SOFTWARE.
  */
 
-#ifndef FPP_PPB_AUDIO_CONFIG_H
-#define FPP_PPB_AUDIO_CONFIG_H
+#pragma once
 
+#include "pp_resource.h"
 #include <ppapi/c/ppb_audio_config.h>
+#include <stdint.h>
 
+struct pp_audio_config_s {
+    COMMON_STRUCTURE_FIELDS
+    PP_AudioSampleRate      sample_rate;
+    uint32_t                sample_frame_count;
+};
 
 PP_Resource
 ppb_audio_config_create_stereo_16_bit(PP_Instance instance, PP_AudioSampleRate sample_rate,
@@ -47,5 +53,3 @@ ppb_audio_config_get_sample_frame_count(PP_Resource config);
 
 PP_AudioSampleRate
 ppb_audio_config_recommend_sample_rate(PP_Instance instance);
-
-#endif // FPP_PPB_AUDIO_CONFIG_H

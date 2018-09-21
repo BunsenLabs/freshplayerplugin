@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013-2015  Rinat Ibragimov
+ * Copyright © 2013-2017  Rinat Ibragimov
  *
  * This file is part of FreshPlayerPlugin.
  *
@@ -24,13 +24,13 @@
 
 #include "config.h"
 #include "config_parser/config_parser.h"
-#include <string.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <locale.h>
-#include <glib.h>
+#include "config_priv.h"
 #include "trace_core.h"
-
+#include <glib.h>
+#include <locale.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 static struct fpp_config_s default_config = {
     .audio_buffer_min_ms =      20,
@@ -46,6 +46,8 @@ static struct fpp_config_s default_config = {
     .quiet =                    0,
     .fullscreen_width    =      0,
     .fullscreen_height   =      0,
+    .fullscreen_horz_maximize_atom = 1,
+    .fullscreen_vert_maximize_atom = 1,
     .randomize_dns_case =       0,
     .device_scale        =      1.0,
     .enable_windowed_mode   =   1,
@@ -86,6 +88,8 @@ static cfg_opt_t opts[] = {
     CFG_SIMPLE_INT("quiet",                  &config.quiet),
     CFG_SIMPLE_INT("fullscreen_width",       &config.fullscreen_width),
     CFG_SIMPLE_INT("fullscreen_height",      &config.fullscreen_height),
+    CFG_SIMPLE_INT("fullscreen_horz_maximize_atom", &config.fullscreen_horz_maximize_atom),
+    CFG_SIMPLE_INT("fullscreen_vert_maximize_atom", &config.fullscreen_vert_maximize_atom),
     CFG_SIMPLE_INT("randomize_dns_case",     &config.randomize_dns_case),
     CFG_SIMPLE_FLOAT("device_scale",         &config.device_scale),
     CFG_SIMPLE_INT("enable_windowed_mode",   &config.enable_windowed_mode),
@@ -214,6 +218,8 @@ fpp_config_initialize(void)
     pepper_data_dir = g_strdup_printf("%s/%s", local_config, fpp_config_get_plugin_name());
     pepper_salt_file_name = g_strdup_printf("%s/%s", local_config, salt_file_name);
     g_free(local_config);
+
+    fpp_config_find_backend_plugin();
 
     initialized = 1;
 }

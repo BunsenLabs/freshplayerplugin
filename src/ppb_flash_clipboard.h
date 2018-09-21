@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013-2015  Rinat Ibragimov
+ * Copyright © 2013-2017  Rinat Ibragimov
  *
  * This file is part of FreshPlayerPlugin.
  *
@@ -22,11 +22,9 @@
  * SOFTWARE.
  */
 
-#ifndef FPP_PPB_FLASH_CLIPBOARD_H
-#define FPP_PPB_FLASH_CLIPBOARD_H
+#pragma once
 
 #include <ppapi/c/private/ppb_flash_clipboard.h>
-
 
 uint32_t
 ppb_flash_clipboard_register_custom_format(PP_Instance instance_id, const char *format_name);
@@ -48,5 +46,3 @@ PP_Bool
 ppb_flash_clipboard_get_sequence_number(PP_Instance instance_id,
                                         PP_Flash_Clipboard_Type clipboard_type,
                                         uint64_t *sequence_number);
-
-#endif // FPP_PPB_FLASH_CLIPBOARD_H

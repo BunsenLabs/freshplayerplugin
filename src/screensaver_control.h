@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013-2015  Rinat Ibragimov
+ * Copyright © 2013-2017  Rinat Ibragimov
  *
  * This file is part of FreshPlayerPlugin.
  *
@@ -22,13 +22,10 @@
  * SOFTWARE.
  */
 
-#ifndef FPP_SCREENSAVER_CONTROL_H
-#define FPP_SCREENSAVER_CONTROL_H
+#pragma once
 
 #include <X11/Xlib.h>
 #include <stdint.h>
-#include "compat.h"
-
 
 enum screensaver_types {
     SST_XSCREENSAVER =          (1 << 0),
@@ -50,6 +47,3 @@ screensaver_connect(void);
 
 void
 screensaver_disconnect(void);
-
-
-#endif // FPP_SCREENSAVER_CONTROL_H

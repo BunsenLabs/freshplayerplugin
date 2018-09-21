@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013-2015  Rinat Ibragimov
+ * Copyright © 2013-2017  Rinat Ibragimov
  *
  * This file is part of FreshPlayerPlugin.
  *
@@ -22,11 +22,34 @@
  * SOFTWARE.
  */
 
-#ifndef FPP_PPB_GRAPHICS2D_H
-#define FPP_PPB_GRAPHICS2D_H
+#pragma once
 
+#include "pp_resource.h"
+#include <X11/Xlib.h>
+#include <X11/extensions/Xrender.h>
+#include <cairo.h>
+#include <glib.h>
 #include <ppapi/c/ppb_graphics_2d.h>
 
+struct pp_graphics2d_s {
+    COMMON_STRUCTURE_FIELDS
+    int                 is_always_opaque;
+    int32_t             width;
+    int32_t             height;
+    int32_t             stride;
+    double              scale;
+    double              external_scale;
+    int32_t             scaled_width;
+    int32_t             scaled_height;
+    int32_t             scaled_stride;
+    char               *data;
+    char               *second_buffer;
+    cairo_surface_t    *cairo_surf;
+    GList              *task_list;
+    Pixmap              pixmap;
+    Picture             xr_pict;
+    GC                  gc;
+};
 
 PP_Resource
 ppb_graphics2d_create(PP_Instance instance, const struct PP_Size *size, PP_Bool is_always_opaque);
@@ -56,5 +79,3 @@ ppb_graphics2d_set_scale(PP_Resource resource, float scale);
 
 float
 ppb_graphics2d_get_scale(PP_Resource resource);
-
-#endif // FPP_PPB_GRAPHICS2D_H

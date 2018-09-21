@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013-2015  Rinat Ibragimov
+ * Copyright © 2013-2017  Rinat Ibragimov
  *
  * This file is part of FreshPlayerPlugin.
  *
@@ -22,25 +22,36 @@
  * SOFTWARE.
  */
 
-#include "ppb_flash.h"
-#include <stdlib.h>
-#include <unistd.h>
-#include <pthread.h>
-#include "trace.h"
-#include "tables.h"
 #include "config.h"
-#include "reverse_constant.h"
-#include "ppb_var.h"
-#include "ppb_url_loader.h"
-#include "ppb_core.h"
-#include "ppb_message_loop.h"
+#include "pp_interface.h"
 #include "pp_resource.h"
+#include "ppb_core.h"
+#include "ppb_flash.h"
+#include "ppb_image_data.h"
+#include "ppb_instance.h"
+#include "ppb_message_loop.h"
+#include "ppb_url_loader.h"
+#include "ppb_url_request_info.h"
+#include "ppb_var.h"
+#include "ppb_video_capture.h"
+#include "reverse_constant.h"
+#include "screensaver_control.h"
+#include "tables.h"
+#include "trace_core.h"
+#include "trace_helpers.h"
+#include "utils.h"
+#include <cairo.h>
+#include <glib.h>
+#include <npapi/npapi.h>
+#include <npapi/npfunctions.h>
+#include <npapi/npruntime.h>
 #include <ppapi/c/dev/ppb_font_dev.h>
 #include <ppapi/c/pp_errors.h>
-#include "screensaver_control.h"
-#include "pp_interface.h"
-#include "ppb_video_capture.h"
-
+#include <pthread.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+#include <unistd.h>
 
 void
 ppb_flash_set_instance_always_on_top(PP_Instance instance, PP_Bool on_top)
@@ -157,6 +168,8 @@ get_proxy_for_url_ptac(void *user_data)
         err = npn.getvalueforurl(pp_i->npp, NPNURLVProxy, p->url, &value, &len);
         if (err == NPERR_NO_ERROR) {
             p->result = ppb_var_var_from_utf8(value, len);
+        } else {
+            trace_info_f("%s, failed to get NPNURLVProxy, code %d\n", __func__, err);
         }
     }
 
@@ -269,8 +282,10 @@ topmost_rect_ptac(void *param)
         "})");
     NPVariant topmost_func;
 
-    if (!npn.evaluate(pp_i->npp, pp_i->np_window_obj, &topmost_func_src, &topmost_func))
+    if (!npn.evaluate(pp_i->npp, pp_i->np_window_obj, &topmost_func_src, &topmost_func)) {
+        trace_error("%s, NPN_Evaluate failed\n", __func__);
         goto err_1;
+    }
 
     if (!NPVARIANT_IS_OBJECT(topmost_func))
         goto err_1;
@@ -284,8 +299,10 @@ topmost_rect_ptac(void *param)
     INT32_TO_NPVARIANT(p->rect.point.x + p->rect.size.width / 2, args[1]);
     INT32_TO_NPVARIANT(p->rect.point.y + p->rect.size.height / 2, args[2]);
 
-    if (!npn.invokeDefault(pp_i->npp, topmost_func_obj, args, 3, &is_topmost))
+    if (!npn.invokeDefault(pp_i->npp, topmost_func_obj, args, 3, &is_topmost)) {
+        trace_error("%s, NPN_InvokeDefault failed\n", __func__);
         goto err_2;
+    }
 
     if (!NPVARIANT_IS_BOOLEAN(is_topmost))
         goto err_3;

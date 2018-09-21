@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013-2015  Rinat Ibragimov
+ * Copyright © 2013-2017  Rinat Ibragimov
  *
  * This file is part of FreshPlayerPlugin.
  *
@@ -22,16 +22,21 @@
  * SOFTWARE.
  */
 
-#include "ppb_image_data.h"
-#include "ppb_core.h"
-#include <stdlib.h>
-#include <string.h>
-#include "trace.h"
-#include "tables.h"
-#include "pp_resource.h"
-#include "reverse_constant.h"
 #include "pp_interface.h"
+#include "pp_resource.h"
+#include "ppb_core.h"
+#include "ppb_image_data.h"
+#include "reverse_constant.h"
+#include "static_assert.h"
+#include "tables.h"
+#include "trace_core.h"
+#include "trace_helpers.h"
+#include "utils.h"
+#include <cairo.h>
+#include <glib.h>
+#include <stdlib.h>
 
+STATIC_ASSERT(sizeof(struct pp_image_data_s) <= LARGEST_RESOURCE_SIZE);
 
 PP_ImageDataFormat
 ppb_image_data_get_native_image_data_format(void)

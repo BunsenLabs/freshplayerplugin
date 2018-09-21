@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013-2015  Rinat Ibragimov
+ * Copyright © 2013-2017  Rinat Ibragimov
  *
  * This file is part of FreshPlayerPlugin.
  *
@@ -22,11 +22,9 @@
  * SOFTWARE.
  */
 
-#ifndef FPP_PPB_FONT_H
-#define FPP_PPB_FONT_H
+#pragma once
 
 #include <ppapi/c/dev/ppb_font_dev.h>
-
 
 struct PP_Var
 ppb_font_get_font_families(PP_Instance instance);
@@ -56,5 +54,3 @@ ppb_font_character_offset_for_pixel(PP_Resource font, const struct PP_TextRun_De
 int32_t
 ppb_font_pixel_offset_for_character(PP_Resource font, const struct PP_TextRun_Dev *text,
                                     uint32_t char_offset);
-
-#endif // FPP_PPB_FONT_H

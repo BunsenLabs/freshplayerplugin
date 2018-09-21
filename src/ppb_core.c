@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013-2015  Rinat Ibragimov
+ * Copyright © 2013-2017  Rinat Ibragimov
  *
  * This file is part of FreshPlayerPlugin.
  *
@@ -22,18 +22,19 @@
  * SOFTWARE.
  */
 
-#include <assert.h>
-#include "ppb_core.h"
-#include <stdlib.h>
-#include <pthread.h>
-#include <time.h>
-#include "trace.h"
-#include "tables.h"
-#include "pp_resource.h"
 #include "pp_interface.h"
+#include "pp_resource.h"
+#include "ppb_core.h"
+#include "ppb_instance.h"
 #include "ppb_message_loop.h"
+#include "tables.h"
+#include "trace_core.h"
+#include "utils.h"
+#include <glib.h>
 #include <ppapi/c/pp_errors.h>
-
+#include <pthread.h>
+#include <stdlib.h>
+#include <time.h>
 
 void
 ppb_core_add_ref_resource(PP_Resource resource)
@@ -132,7 +133,7 @@ ppb_core_call_on_browser_thread(PP_Instance instance, void (*func)(void *), void
     task->user_data = user_data;
 
     // Push task into queue. The only purpose is to put task into queue even if message loop
-    // is currenly terminating (in teardown state), so we are ignoring that. There are three
+    // is currently terminating (in teardown state), so we are ignoring that. There are three
     // possible loop states. Message loop is either running, stopped, or terminating. If it's
     // still running, task will be executed in the context of that loop. If it's stopped or
     // stopping right now, task will be pushed to a queue. After that code below will schedule

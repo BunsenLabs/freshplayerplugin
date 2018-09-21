@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013-2015  Rinat Ibragimov
+ * Copyright © 2013-2017  Rinat Ibragimov
  *
  * This file is part of FreshPlayerPlugin.
  *
@@ -22,13 +22,14 @@
  * SOFTWARE.
  */
 
-#include "ppb_view.h"
-#include <stdlib.h>
-#include "trace.h"
 #include "config.h"
-#include "pp_resource.h"
 #include "pp_interface.h"
+#include "pp_resource.h"
+#include "ppb_view.h"
+#include "static_assert.h"
+#include "trace_core.h"
 
+STATIC_ASSERT(sizeof(struct pp_view_s) <= LARGEST_RESOURCE_SIZE);
 
 PP_Bool
 ppb_view_is_view(PP_Resource resource)

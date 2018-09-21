@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013-2015  Rinat Ibragimov
+ * Copyright © 2013-2017  Rinat Ibragimov
  *
  * This file is part of FreshPlayerPlugin.
  *
@@ -22,11 +22,11 @@
  * SOFTWARE.
  */
 
-#include <glib.h>
-#include <string.h>
 #include "pp_interface.h"
-#include "trace.h"
-
+#include "trace_core.h"
+#include <glib.h>
+#include <pthread.h>
+#include <string.h>
 
 static GHashTable      *interface_ht = NULL;
 static pthread_mutex_t  lock = PTHREAD_MUTEX_INITIALIZER;

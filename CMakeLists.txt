@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 2.8.8)
 # version
 set(VER_MAJOR 0)
 set(VER_MINOR 3)
-set(VER_MICRO 5)
+set(VER_MICRO 9)
 
 # setup compiler flags
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99 -fPIC -pthread")
@@ -59,6 +59,7 @@ pkg_check_modules(REQ
     pangoft2
     freetype2
     openssl
+    icu-uc
     REQUIRED)
 
 # merge glib-2.0
@@ -68,19 +69,6 @@ list(APPEND REQ_LIBRARIES    ${GLIB_LIBRARIES})
 
 # libdl.so, librt.so, and libm.so
 list(APPEND REQ_LIBRARIES dl rt m)
-
-# select GTK+ version
-set(WITH_GTK 2 CACHE INTEGER "select GTK+ major version to link with (2 or 3)")
-if (WITH_GTK EQUAL 2)
-    pkg_check_modules(GTK gtk+-2.0 REQUIRED)
-elseif (WITH_GTK EQUAL 3)
-    pkg_check_modules(GTK gtk+-3.0 REQUIRED)
-else()
-    message(FATAL_ERROR "Unsupported GTK+ version ${GTK_VERSION}")
-endif()
-list(APPEND REQ_LIBRARY_DIRS ${GTK_LIBRARY_DIRS})
-list(APPEND REQ_INCLUDE_DIRS ${GTK_INCLUDE_DIRS})
-list(APPEND REQ_LIBRARIES    ${GTK_LIBRARIES})
 
 # OpenGL ES 2
 set(WITH_GLES2 FALSE CACHE BOOLEAN "use system libGLESv2")
@@ -164,6 +152,5 @@ endif()
 set(SYMBOLMAP "-Wl,-version-script=\"${CMAKE_SOURCE_DIR}/src/symbolmap\"")
 
 add_subdirectory(3rdparty)
-add_subdirectory(resources)
 add_subdirectory(src)
 add_subdirectory(tests)

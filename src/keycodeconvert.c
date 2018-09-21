@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013-2015  Rinat Ibragimov
+ * Copyright © 2013-2017  Rinat Ibragimov
  *
  * This file is part of FreshPlayerPlugin.
  *
@@ -24,9 +24,11 @@
 
 #include "keycodeconvert.h"
 #include "keycodepp.h"
+
 #define XK_3270
-#include <X11/keysym.h>
+
 #include <X11/XF86keysym.h>
+#include <X11/keysym.h>
 #include <ppapi/c/ppb_input_event.h>
 
 int

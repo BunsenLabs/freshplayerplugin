@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013-2015  Rinat Ibragimov
+ * Copyright © 2013-2017  Rinat Ibragimov
  *
  * This file is part of FreshPlayerPlugin.
  *
@@ -22,62 +22,22 @@
  * SOFTWARE.
  */
 
-#include "config.h"
-#include <stdlib.h>
+#pragma once
 
-static
-const char *
-plugin_path_list[] = { NULL };
+#include <npapi/npapi.h>
 
-const char **
-fpp_config_get_plugin_path_list(void)
-{
-    return plugin_path_list;
-}
+// Emulation of NPN_PluginThreadAsyncCall.
+//
+// There are versions of Firefox, which have NPN_PluginThreadAsyncCall removed.
+// Since it's required by FreshPlayerPlugin, it needs to be emulated.
+// Current implementation uses the fact the browser runs GLib's mainloop.
 
-const char *
-fpp_config_get_default_plugin_version(void)
-{
-    return "1.0.0.0";
-}
+/// Initialize plugin-thread-async-call emulation.
+///
+/// This call must be performed from plugin's main thread.
+int
+np_asynccall_initialize(void);
 
-const char *
-fpp_config_get_plugin_name(void)
-{
-    return "libpdf.so frontend";
-}
-
-const char *
-fpp_config_get_default_plugin_descr(void)
-{
-    return "libpdf.so frontend";
-}
-
-const char *
-fpp_config_get_plugin_mime_type(void)
-{
-    return "application/pdf::Portable Document Format";
-}
-
-char *
-fpp_config_get_plugin_path(void)
-{
-    return NULL;
-}
-
-const char *
-fpp_config_get_plugin_file_name(void)
-{
-    return "";
-}
-
-uintptr_t
-fpp_config_plugin_has_manifest(void)
-{
-    return 0;
-}
-
+/// Schedule |func| on the plugin's main thread.
 void
-fpp_config_detect_plugin_specific_quirks(void)
-{
-}
+np_asynccall_call(NPP instance, void (*func)(void *), void *userData);

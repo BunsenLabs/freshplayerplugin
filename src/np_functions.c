@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013-2015  Rinat Ibragimov
+ * Copyright © 2013-2017  Rinat Ibragimov
  *
  * This file is part of FreshPlayerPlugin.
  *
@@ -22,47 +22,55 @@
  * SOFTWARE.
  */
 
-#include <assert.h>
-#include <inttypes.h>
-#include <npapi/npapi.h>
-#include <stdlib.h>
-#include <string.h>
+#include "config.h"
+#include "config_priv.h"
+#include "eintr_retry.h"
+#include "gtk_wrapper.h"
+#include "header_parser.h"
+#include "keycodeconvert.h"
+#include "pp_interface.h"
+#include "pp_resource.h"
+#include "ppb_core.h"
+#include "ppb_cursor_control.h"
+#include "ppb_flash_fullscreen.h"
+#include "ppb_graphics2d.h"
+#include "ppb_graphics3d.h"
+#include "ppb_input_event.h"
+#include "ppb_instance.h"
+#include "ppb_message_loop.h"
+#include "ppb_url_loader.h"
+#include "ppb_url_request_info.h"
+#include "ppb_url_util.h"
+#include "ppb_var.h"
+#include "ppb_view.h"
+#include "reverse_constant.h"
+#include "tables.h"
+#include "trace_core.h"
+#include "trace_helpers.h"
+#include "utils.h"
+#include "x11_event_thread.h"
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <X11/extensions/Xrender.h>
-#include <cairo.h>
 #include <cairo-xlib.h>
-#include <GLES2/gl2.h>
-#include <pthread.h>
-#include <gdk/gdk.h>
-#include <gdk/gdkx.h>
-#include "trace.h"
-#include "reverse_constant.h"
-#include "pp_interface.h"
-#include "pp_resource.h"
-#include "tables.h"
-#include "config.h"
-#include "p2n_proxy_class.h"
-#include <ppapi/c/ppp_instance.h>
-#include <ppapi/c/ppp_input_event.h>
+#include <cairo.h>
+#include <fcntl.h>
+#include <glib.h>
+#include <inttypes.h>
+#include <npapi/npapi.h>
+#include <npapi/npfunctions.h>
+#include <npapi/npruntime.h>
+#include <pango/pangocairo.h>
 #include <ppapi/c/pp_errors.h>
+#include <ppapi/c/ppp_input_event.h>
+#include <ppapi/c/ppp_instance.h>
 #include <ppapi/c/private/ppp_instance_private.h>
-#include "ppb_input_event.h"
-#include "ppb_url_loader.h"
-#include "ppb_url_request_info.h"
-#include "ppb_var.h"
-#include "ppb_core.h"
-#include "ppb_cursor_control.h"
-#include "ppb_message_loop.h"
-#include "ppb_flash_fullscreen.h"
-#include "ppb_url_util.h"
-#include "header_parser.h"
-#include "keycodeconvert.h"
-#include "eintr_retry.h"
-#include "np_entry.h"
-#include "compat.h"
-#include "x11_event_thread.h"
-
+#include <pthread.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 int16_t
 handle_key_press_release_event(NPP npp, void *event);
@@ -93,8 +101,8 @@ set_window_comt(void *user_data, int32_t result)
         pthread_mutex_lock(&display.lock);
         v->rect.point.x = 0;
         v->rect.point.y = 0;
-        v->rect.size.width = pp_i->width / config.device_scale;
-        v->rect.size.height = pp_i->height / config.device_scale;
+        v->rect.size.width = pp_i->width / config.device_scale + 0.5;
+        v->rect.size.height = pp_i->height / config.device_scale + 0.5;
         pp_resource_release(view);
         pthread_mutex_unlock(&display.lock);
 
@@ -129,8 +137,10 @@ NPP_SetWindow(NPP npp, NPWindow *window)
     pp_i->clip_rect.top =    window->clipRect.top;
     pp_i->clip_rect.bottom = window->clipRect.bottom;
 
-    if (npn.getvalue(pp_i->npp, NPNVnetscapeWindow, &pp_i->browser_wnd) != NPERR_NO_ERROR)
+    if (npn.getvalue(pp_i->npp, NPNVnetscapeWindow, &pp_i->browser_wnd) != NPERR_NO_ERROR) {
         pp_i->browser_wnd = None;
+        trace_error("%s, failed to get NPNVnetscapeWindow\n", __func__);
+    }
 
     if (pp_i->windowed_mode) {
         pp_i->wnd = x11et_register_window(pp_i->id, (Window)window->window, NPP_HandleEvent,
@@ -340,7 +350,7 @@ im_preedit_changed(GtkIMContext *im_context, struct pp_instance_s *pp_i)
     struct PP_Var   text;
     uint32_t        offsets[2];
 
-    gtk_im_context_get_preedit_string(im_context, &preedit_string, NULL, &cursor_pos);
+    gw_gtk_im_context_get_preedit_string(im_context, &preedit_string, NULL, &cursor_pos);
 
     ptr = preedit_string;
     for (int k = 0; k < cursor_pos; k ++)
@@ -412,7 +422,7 @@ catcher_key_press(GtkWidget *widget, GdkEvent *event, struct pp_instance_s *pp_i
     };
 
     // untie GdkWindow from auxiliary widget
-    gdk_window_set_user_data(event->key.window, NULL);
+    gw_gdk_window_set_user_data(event->key.window, NULL);
 
     handle_key_press_release_event(pp_i->npp, &ev);
     return TRUE;
@@ -430,7 +440,11 @@ NPP_New(NPMIMEType pluginType, NPP npp, uint16_t mode, int16_t argc, char *argn[
 
     if (config.quirks.plugin_missing) {
         trace_info_z("plugin missing, using placeholder\n");
-        npn.setvalue(npp, NPPVpluginWindowBool, (void*)0); // ask windowsless mode
+
+        // ask windowsless mode
+        if (npn.setvalue(npp, NPPVpluginWindowBool, (void*)0) != NPERR_NO_ERROR)
+            trace_error("%s, failed to set NPPVpluginWindowBool\n", __func__);
+
         return NPERR_NO_ERROR;
     }
 
@@ -480,21 +494,30 @@ NPP_New(NPMIMEType pluginType, NPP npp, uint16_t mode, int16_t argc, char *argn[
 
     if (pp_i->windowed_mode) {
         // ask windowed mode
-        npn.setvalue(npp, NPPVpluginWindowBool, (void*)1);
+        if (npn.setvalue(npp, NPPVpluginWindowBool, (void*)1) != NPERR_NO_ERROR)
+            trace_error("%s, failed to set NPPVpluginWindowBool\n", __func__);
+
     } else {
         // ask windowsless mode
-        npn.setvalue(npp, NPPVpluginWindowBool, (void*)0);
+        if (npn.setvalue(npp, NPPVpluginWindowBool, (void*)0) != NPERR_NO_ERROR)
+            trace_error("%s, failed to set NPPVpluginWindowBool\n", __func__);
     }
 
     // determine whenever XEmbed is used
     NPBool browser_supports_xembed = false;
-    npn.getvalue(npp, NPNVSupportsXEmbedBool, &browser_supports_xembed);
+    if (npn.getvalue(npp, NPNVSupportsXEmbedBool, &browser_supports_xembed) != NPERR_NO_ERROR)
+        trace_error("%s, failed to get NPNVSupportsXEmbedBool\n", __func__);
+
     pp_i->use_xembed = browser_supports_xembed && config.enable_xembed;
     trace_info_f("      XEmbed is %s\n", browser_supports_xembed ? "supported" : "not supported");
     trace_info_f("      XEmbed is %s\n", pp_i->use_xembed ? "used" : "not used");
 
     // set transparency mode
-    npn.setvalue(npp, NPPVpluginTransparentBool, (void*)(size_t)pp_i->is_transparent);
+    if (npn.setvalue(npp, NPPVpluginTransparentBool,
+                     (void *)(size_t)pp_i->is_transparent) != NPERR_NO_ERROR)
+    {
+        trace_error("%s, failed to set NPPVpluginTransparentBool\n", __func__);
+    }
 
     pp_i->is_fullframe = (mode == NP_FULL);
     pp_i->id = tables_generate_new_pp_instance_id();
@@ -503,8 +526,12 @@ NPP_New(NPMIMEType pluginType, NPP npp, uint16_t mode, int16_t argc, char *argn[
     pp_i->incognito_mode = 0;
     if (npn.version >= NPVERS_HAS_PRIVATE_MODE) {
         NPBool private = false;
-        if (npn.getvalue(pp_i->npp, NPNVprivateModeBool, &private) == NPERR_NO_ERROR)
+        if (npn.getvalue(pp_i->npp, NPNVprivateModeBool, &private) == NPERR_NO_ERROR) {
             pp_i->incognito_mode = private ? 1 : 0;
+        } else {
+            // Not an error, actually. Browser can have no support for that variable.
+            trace_info_f("%s, failed to get NPNVprivateModeBool\n", __func__);
+        }
     }
 
     do {
@@ -541,13 +568,13 @@ NPP_New(NPMIMEType pluginType, NPP npp, uint16_t mode, int16_t argc, char *argn[
     }
 
     // prepare GTK+ widget for catching keypress events returned by IME
-    pp_i->catcher_widget = gtk_label_new("");
-    gtk_widget_set_realized(pp_i->catcher_widget, TRUE);
+    pp_i->catcher_widget = gw_gtk_label_new("");
+    gw_gtk_widget_set_realized(pp_i->catcher_widget, TRUE);
     g_signal_connect(pp_i->catcher_widget, "key-press-event", G_CALLBACK(catcher_key_press), pp_i);
 
     pp_i->textinput_type = PP_TEXTINPUT_TYPE_DEV_NONE;
-    pp_i->im_context_multi = gtk_im_multicontext_new();
-    pp_i->im_context_simple = gtk_im_context_simple_new();
+    pp_i->im_context_multi = gw_gtk_im_multicontext_new();
+    pp_i->im_context_simple = gw_gtk_im_context_simple_new();
     pp_i->im_context = NULL;
 
     g_signal_connect(pp_i->im_context_multi, "commit", G_CALLBACK(im_commit), pp_i);
@@ -1134,14 +1161,14 @@ handle_graphics_expose_event(NPP npp, void *event)
             Picture dst_pict = XRenderCreatePicture(dpy, drawable, display.pictfmt_rgb24, 0, 0);
             XRenderComposite(dpy,
                              pp_i->is_transparent ? PictOpOver : PictOpSrc,
-                             g3d->xr_pict, None, dst_pict,
+                             g3d->xr_pict[1], None, dst_pict,
                              ev->x, ev->y, 0, 0,
                              ev->x, ev->y, ev->width, ev->height);
             XRenderFreePicture(dpy, dst_pict);
             XFlush(dpy);
         } else {
             // software compositing fallback
-            draw_drawable_on_drawable(dpy, screen, pp_i->is_transparent, g3d->pixmap, source_x,
+            draw_drawable_on_drawable(dpy, screen, pp_i->is_transparent, g3d->pixmap[1], source_x,
                                       source_y, drawable, ev->x, ev->y, ev->width, ev->height);
         }
     } else {
@@ -1205,27 +1232,15 @@ handle_placeholder_graphics_expose_event(NPP npp, void *event)
     gchar *txt;
     if (config.quirks.incompatible_npapi_version) {
         txt = g_strdup_printf("NPAPI version too old (%d)", npn.version);
+
     } else {
-        GString *builder = g_string_new(NULL);
         const char *plugin_name = fpp_config_get_plugin_file_name();
-        g_string_printf(builder,
+        txt = g_strdup_printf(
             "Failed to load \"%s\".\n"
             "Freshwrapper is a translation layer which needs\n"
-            "PPAPI plugin backend. Ensure your system have\n"
-            "\"%s\" available.\n"
-            "Paths tried:\n",
+            "a PPAPI plugin backend. Ensure your system have\n"
+            "\"%s\" available.\n",
             plugin_name, plugin_name);
-
-        // append list of tried paths
-        GList *tried_files = g_list_copy(np_entry_get_tried_plugin_files());
-        tried_files = g_list_reverse(tried_files); // list was built in reverse
-        GList *ll = tried_files;
-        while (ll) {
-            g_string_append_printf(builder, "%s\n", (char *)ll->data);
-            ll = g_list_next(ll);
-        }
-        g_list_free(tried_files);
-        txt = g_string_free(builder, FALSE); // keep buffer
     }
 
     const double pos_x = 10.0;
@@ -1330,8 +1345,8 @@ handle_enter_leave_event(NPP npp, void *event)
     if (!(PP_INPUTEVENT_CLASS_MOUSE & combined_mask))
         return 0;
 
-    struct PP_Point mouse_position = {.x = ev->x / config.device_scale,
-                                      .y = ev->y / config.device_scale };
+    struct PP_Point mouse_position = {.x = ev->x / config.device_scale + 0.5,
+                                      .y = ev->y / config.device_scale + 0.5 };
     struct PP_Point zero_point = {.x = 0, .y = 0};
     unsigned int mod = x_state_mask_to_pp_inputevent_modifier(ev->state);
     PP_InputEvent_Type event_type = (ev->type == EnterNotify) ? PP_INPUTEVENT_TYPE_MOUSEENTER
@@ -1360,8 +1375,8 @@ handle_motion_event(NPP npp, void *event)
     if (!(PP_INPUTEVENT_CLASS_MOUSE & combined_mask))
         return 0;
 
-    struct PP_Point mouse_position = {.x = ev->x / config.device_scale,
-                                      .y = ev->y / config.device_scale};
+    struct PP_Point mouse_position = {.x = ev->x / config.device_scale + 0.5,
+                                      .y = ev->y / config.device_scale + 0.5 };
     struct PP_Point zero_point = {.x = 0, .y = 0};
     unsigned int mod = x_state_mask_to_pp_inputevent_modifier(ev->state);
     PP_Resource pp_event;
@@ -1386,8 +1401,8 @@ handle_button_press_release_event(NPP npp, void *event)
     if (!pp_i->ppp_input_event)
         return 0;
 
-    struct PP_Point mouse_position = {.x = ev->x / config.device_scale,
-                                      .y = ev->y / config.device_scale };
+    struct PP_Point mouse_position = {.x = ev->x / config.device_scale + 0.5,
+                                      .y = ev->y / config.device_scale + 0.5 };
     struct PP_Point zero_point = {.x = 0, .y = 0};
     unsigned int mod = x_state_mask_to_pp_inputevent_modifier(ev->state);
     float wheel_x = 0.0, wheel_y = 0.0;
@@ -1476,9 +1491,9 @@ handle_button_press_release_event(NPP npp, void *event)
 static GdkEvent *
 make_gdk_key_event_from_x_key(XKeyEvent *ev)
 {
-    GdkDisplay *gdpy = gdk_x11_lookup_xdisplay(ev->display);
+    GdkDisplay *gdpy = gw_gdk_x11_lookup_xdisplay(ev->display);
     if (!gdpy)
-        gdpy = gdk_display_get_default();
+        gdpy = gw_gdk_display_get_default();
 
     if (!gdpy) {
         trace_error("%s, gdpy is NULL\n", __func__);
@@ -1488,12 +1503,12 @@ make_gdk_key_event_from_x_key(XKeyEvent *ev)
     KeySym keysym = NoSymbol;
     guint8 keyboard_group = 0;
     XLookupString(ev, NULL, 0, &keysym, NULL);
-    GdkKeymap *keymap = gdk_keymap_get_for_display(gdpy);
+    GdkKeymap *keymap = gw_gdk_keymap_get_for_display(gdpy);
     GdkKeymapKey *keys = NULL;
     guint *keyvals = NULL;
     gint n_entries = 0;
     if (keymap &&
-        gdk_keymap_get_entries_for_keycode(keymap, ev->keycode, &keys, &keyvals, &n_entries))
+        gw_gdk_keymap_get_entries_for_keycode(keymap, ev->keycode, &keys, &keyvals, &n_entries))
     {
         for (gint i = 0; i < n_entries; ++i) {
             if (keyvals[i] == keysym) {
@@ -1506,11 +1521,11 @@ make_gdk_key_event_from_x_key(XKeyEvent *ev)
     g_free(keyvals); keyvals = NULL;
 
     // Get a GdkWindow.
-    GdkWindow *gwnd = gdk_x11_window_lookup_for_display(gdpy, ev->window);
+    GdkWindow *gwnd = gw_gdk_x11_window_lookup_for_display(gdpy, ev->window);
     if (gwnd)
         g_object_ref(gwnd);
     else
-        gwnd = gdk_x11_window_foreign_new_for_display(gdpy, ev->window);
+        gwnd = gw_gdk_x11_window_foreign_new_for_display(gdpy, ev->window);
     if (!gwnd) {
         trace_error("%s, gdpy is NULL (2)\n", __func__);
         return NULL;
@@ -1518,7 +1533,7 @@ make_gdk_key_event_from_x_key(XKeyEvent *ev)
 
     // Create a GdkEvent.
     GdkEventType event_type = ev->type == KeyPress ? GDK_KEY_PRESS : GDK_KEY_RELEASE;
-    GdkEvent *event = gdk_event_new(event_type);
+    GdkEvent *event = gw_gdk_event_new(event_type);
     event->key.type = event_type;
     event->key.window = gwnd;
 
@@ -1551,26 +1566,28 @@ handle_key_press_release_event(NPP npp, void *event)
 
     if (pp_i->im_context && ev->type == KeyPress) {
         Window browser_window;
-        if (npn.getvalue(npp, NPNVnetscapeWindow, &browser_window) != NPERR_NO_ERROR)
+        if (npn.getvalue(npp, NPNVnetscapeWindow, &browser_window) != NPERR_NO_ERROR) {
+            trace_error("%s, failed to get NPNVnetscapeWindow\n", __func__);
             browser_window = None;
+        }
         ev->window = browser_window;
 
         pthread_mutex_lock(&display.lock);
         GdkEvent *gev = make_gdk_key_event_from_x_key(ev);
         if (gev) {
             // tie catcher_widget to GdkWindow
-            gdk_window_set_user_data(gev->key.window, pp_i->catcher_widget);
+            gw_gdk_window_set_user_data(gev->key.window, pp_i->catcher_widget);
 
-            gtk_im_context_set_client_window(pp_i->im_context, gev->key.window);
-            gboolean stop = gtk_im_context_filter_keypress(pp_i->im_context, &gev->key);
+            gw_gtk_im_context_set_client_window(pp_i->im_context, gev->key.window);
+            gboolean stop = gw_gtk_im_context_filter_keypress(pp_i->im_context, &gev->key);
 
             if (!stop) {
                 // stop == 0 means gev and its GdkWindow is no longer needed and will be freed
                 // by subsequent gdk_event_free, therefore we untie auxiliary widget, just in case.
-                gdk_window_set_user_data(gev->key.window, NULL);
+                gw_gdk_window_set_user_data(gev->key.window, NULL);
             }
 
-            gdk_event_free(gev);
+            gw_gdk_event_free(gev);
             if (stop) {
                 pthread_mutex_unlock(&display.lock);
                 return 1;
@@ -1652,9 +1669,9 @@ handle_focus_in_out_event(NPP npp, void *event)
     PP_Bool has_focus = (ev->type == FocusIn) ? PP_TRUE : PP_FALSE;
     if (pp_i->im_context) {
         if (ev->type == FocusIn)
-            gtk_im_context_focus_in(pp_i->im_context);
+            gw_gtk_im_context_focus_in(pp_i->im_context);
         else
-            gtk_im_context_focus_out(pp_i->im_context);
+            gw_gtk_im_context_focus_out(pp_i->im_context);
     }
 
     ppb_core_call_on_main_thread2(0, PP_MakeCCB(call_ppp_did_change_focus_comt,

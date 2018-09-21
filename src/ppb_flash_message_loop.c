@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013-2015  Rinat Ibragimov
+ * Copyright © 2013-2017  Rinat Ibragimov
  *
  * This file is part of FreshPlayerPlugin.
  *
@@ -22,15 +22,23 @@
  * SOFTWARE.
  */
 
-#include "ppb_flash_message_loop.h"
-#include <ppapi/c/pp_errors.h>
-#include <stdlib.h>
-#include "trace.h"
-#include "tables.h"
-#include "pp_resource.h"
-#include "ppb_message_loop.h"
 #include "pp_interface.h"
+#include "pp_resource.h"
+#include "ppb_flash_message_loop.h"
+#include "ppb_message_loop.h"
+#include "static_assert.h"
+#include "tables.h"
+#include "trace_core.h"
+#include <ppapi/c/pp_errors.h>
 
+struct pp_flash_message_loop_s {
+    COMMON_STRUCTURE_FIELDS
+    int             running;
+    PP_Resource     message_loop;
+    int             depth;
+};
+
+STATIC_ASSERT(sizeof(struct pp_flash_message_loop_s) <= LARGEST_RESOURCE_SIZE);
 
 PP_Resource
 ppb_flash_message_loop_create(PP_Instance instance)

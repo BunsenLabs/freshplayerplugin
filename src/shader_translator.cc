@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013-2015  Rinat Ibragimov
+ * Copyright © 2013-2017  Rinat Ibragimov
  *
  * This file is part of FreshPlayerPlugin.
  *
@@ -25,7 +25,7 @@
 #include "shader_translator.h"
 #include <GLSLANG/ShaderLang.h>
 #include <glib.h>
-
+#include <string>
 
 static
 void

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013-2015  Rinat Ibragimov
+ * Copyright © 2013-2017  Rinat Ibragimov
  *
  * This file is part of FreshPlayerPlugin.
  *
@@ -22,29 +22,26 @@
  * SOFTWARE.
  */
 
-
 #define _FILE_OFFSET_BITS  64
 
-#include "ppb_flash_file.h"
-#include <stdlib.h>
-#include "pp_resource.h"
-#include <ppapi/c/pp_errors.h>
-#include <ppapi/c/ppb_file_io.h>
-#include <errno.h>
-#include <ppapi/c/pp_file_info.h>
-#include <stdio.h>
-#include <string.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <dirent.h>
-#include <glib.h>
-#include "trace.h"
-#include "tables.h"
 #include "config.h"
 #include "pp_interface.h"
-
+#include "pp_resource.h"
+#include "ppb_file_ref.h"
+#include "ppb_flash_file.h"
+#include "trace_core.h"
+#include <dirent.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <glib.h>
+#include <ppapi/c/pp_errors.h>
+#include <ppapi/c/pp_file_info.h>
+#include <ppapi/c/ppb_file_io.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 /// resolve pp module local path to absolute one
 static

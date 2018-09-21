@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013-2015  Rinat Ibragimov
+ * Copyright © 2013-2017  Rinat Ibragimov
  *
  * This file is part of FreshPlayerPlugin.
  *
@@ -22,11 +22,9 @@
  * SOFTWARE.
  */
 
-#ifndef FPP_PPB_NETWORK_MONITOR_H
-#define FPP_PPB_NETWORK_MONITOR_H
+#pragma once
 
 #include <ppapi/c/ppb_network_monitor.h>
-
 
 PP_Resource
 ppb_network_monitor_create(PP_Instance instance);
@@ -37,5 +35,3 @@ ppb_network_monitor_update_network_list(PP_Resource network_monitor, PP_Resource
 
 PP_Bool
 ppb_network_monitor_is_network_monitor(PP_Resource resource);
-
-#endif // FPP_PPB_NETWORK_MONITOR_H

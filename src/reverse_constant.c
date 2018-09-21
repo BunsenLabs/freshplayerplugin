@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013-2015  Rinat Ibragimov
+ * Copyright © 2013-2017  Rinat Ibragimov
  *
  * This file is part of FreshPlayerPlugin.
  *
@@ -25,7 +25,6 @@
 #include "reverse_constant.h"
 #include <X11/Xlib.h>
 #include <ppapi/c/pp_graphics_3d.h>
-
 
 #define CASE(q) case q: return #q
 

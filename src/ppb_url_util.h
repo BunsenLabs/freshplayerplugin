@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013-2015  Rinat Ibragimov
+ * Copyright © 2013-2017  Rinat Ibragimov
  *
  * This file is part of FreshPlayerPlugin.
  *
@@ -22,11 +22,9 @@
  * SOFTWARE.
  */
 
-#ifndef FPP_PPB_URL_UTIL_H
-#define FPP_PPB_URL_UTIL_H
+#pragma once
 
 #include <ppapi/c/dev/ppb_url_util_dev.h>
-
 
 struct PP_Var
 ppb_url_util_canonicalize(struct PP_Var url, struct PP_URLComponents_Dev *components);
@@ -56,5 +54,3 @@ ppb_url_util_get_plugin_instance_url(PP_Instance instance, struct PP_URLComponen
 
 struct PP_Var
 ppb_url_util_get_plugin_referrer_url(PP_Instance instance, struct PP_URLComponents_Dev *components);
-
-#endif // FPP_PPB_URL_UTIL_H

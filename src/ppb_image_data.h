@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013-2015  Rinat Ibragimov
+ * Copyright © 2013-2017  Rinat Ibragimov
  *
  * This file is part of FreshPlayerPlugin.
  *
@@ -22,11 +22,21 @@
  * SOFTWARE.
  */
 
-#ifndef FPP_PPB_IMAGE_DATA_H
-#define FPP_PPB_IMAGE_DATA_H
+#pragma once
 
+#include "pp_resource.h"
+#include <cairo.h>
 #include <ppapi/c/ppb_image_data.h>
 
+struct pp_image_data_s {
+    COMMON_STRUCTURE_FIELDS
+    int32_t             width;
+    int32_t             height;
+    int32_t             stride;
+    char               *data;
+    PP_ImageDataFormat  format;
+    cairo_surface_t    *cairo_surf;
+};
 
 PP_ImageDataFormat
 ppb_image_data_get_native_image_data_format(void);
@@ -49,5 +59,3 @@ ppb_image_data_map(PP_Resource image_data);
 
 void
 ppb_image_data_unmap(PP_Resource image_data);
-
-#endif // FPP_PPB_IMAGE_DATA_H

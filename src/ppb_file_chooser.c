@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013-2015  Rinat Ibragimov
+ * Copyright © 2013-2017  Rinat Ibragimov
  *
  * This file is part of FreshPlayerPlugin.
  *
@@ -22,20 +22,32 @@
  * SOFTWARE.
  */
 
-#include "ppb_file_chooser.h"
-#include "ppb_message_loop.h"
-#include <stdlib.h>
-#include "pp_resource.h"
-#include "tables.h"
-#include "trace.h"
-#include "ppb_var.h"
-#include "ppb_core.h"
-#include "ppb_file_ref.h"
-#include "reverse_constant.h"
-#include <ppapi/c/pp_errors.h>
-#include <gdk/gdkx.h>
+#include "gtk_wrapper.h"
 #include "pp_interface.h"
+#include "pp_resource.h"
+#include "ppb_core.h"
+#include "ppb_file_chooser.h"
+#include "ppb_file_ref.h"
+#include "ppb_instance.h"
+#include "ppb_message_loop.h"
+#include "ppb_var.h"
+#include "reverse_constant.h"
+#include "static_assert.h"
+#include "tables.h"
+#include "trace_core.h"
+#include "trace_helpers.h"
+#include <X11/Xlib.h>
+#include <glib.h>
+#include <ppapi/c/pp_errors.h>
+#include <stdlib.h>
 
+struct pp_file_chooser_s {
+    COMMON_STRUCTURE_FIELDS
+    PP_FileChooserMode_Dev  mode;
+    struct PP_Var           accept_types;
+};
+
+STATIC_ASSERT(sizeof(struct pp_file_chooser_s) <= LARGEST_RESOURCE_SIZE);
 
 PP_Resource
 ppb_file_chooser_create(PP_Instance instance, PP_FileChooserMode_Dev mode,
@@ -106,7 +118,7 @@ fcd_response_handler(GtkDialog *dialog, gint response_id, gpointer user_data)
 
     if (response_id == GTK_RESPONSE_OK) {
         PP_Resource *file_refs, *file_ref;
-        GSList *fname_lst = gtk_file_chooser_get_filenames(GTK_FILE_CHOOSER(dialog));
+        GSList *fname_lst = gw_gtk_file_chooser_get_filenames(GTK_FILE_CHOOSER(dialog));
         guint cnt = g_slist_length(fname_lst);
 
         callback_result = PP_OK;
@@ -125,7 +137,7 @@ fcd_response_handler(GtkDialog *dialog, gint response_id, gpointer user_data)
     }
 
     if (!p->dialog_closed)
-        gtk_widget_destroy(GTK_WIDGET(dialog));
+        gw_gtk_widget_destroy(GTK_WIDGET(dialog));
 
     ppb_message_loop_post_work_with_result(p->message_loop, p->ccb, 0, callback_result, 0,
                                            __func__);
@@ -158,42 +170,39 @@ show_without_user_guesture_ptac(void *param)
         dialog_title = "Open file";
     }
 
-#if GTK_MAJOR_VERSION == 3
-    void *open_button_title = "_Open";
-    void *close_button_title = "_Close";
-#elif GTK_MAJOR_VERSION == 2
-    void *open_button_title = GTK_STOCK_OPEN;
-    void *close_button_title = GTK_STOCK_CANCEL;
-#else
-#error Unknown GTK version
-#endif
+    const int gtk_version = gw_major_version();
 
-    fcd = gtk_file_chooser_dialog_new(dialog_title, NULL,
-                                      p->save_as ? GTK_FILE_CHOOSER_ACTION_SAVE
-                                                 : GTK_FILE_CHOOSER_ACTION_OPEN,
-                                      close_button_title, GTK_RESPONSE_CANCEL,
-                                      open_button_title, GTK_RESPONSE_OK, NULL);
+    void *open_button_title =  gtk_version == 2 ? "gtk-open"
+                                                : "_Open";
+    void *close_button_title = gtk_version == 2 ? "gtk-close"
+                                                : "_Close";
+
+    fcd = gw_gtk_file_chooser_dialog_new(dialog_title, NULL,
+                                         p->save_as ? GTK_FILE_CHOOSER_ACTION_SAVE
+                                                    : GTK_FILE_CHOOSER_ACTION_OPEN,
+                                         close_button_title, GTK_RESPONSE_CANCEL,
+                                         open_button_title, GTK_RESPONSE_OK, NULL);
 
     if (p->mode == PP_FILECHOOSERMODE_OPENMULTIPLE)
-        gtk_file_chooser_set_select_multiple(GTK_FILE_CHOOSER(fcd), 1);
+        gw_gtk_file_chooser_set_select_multiple(GTK_FILE_CHOOSER(fcd), 1);
 
-    gtk_widget_realize(fcd);
+    gw_gtk_widget_realize(fcd);
 
     Window parent_wnd;
     if (npn.getvalue(p->pp_i->npp, NPNVnetscapeWindow, &parent_wnd) == NPERR_NO_ERROR) {
-        GdkWindow *fcd_wnd = gtk_widget_get_window(fcd);
+        GdkWindow *fcd_wnd = gw_gtk_widget_get_window(fcd);
 
         XSetTransientForHint(GDK_WINDOW_XDISPLAY(fcd_wnd),
                              GDK_WINDOW_XID(fcd_wnd),
                              parent_wnd);
     } else {
-        trace_warning("%s, can't get NPNVnetscapeWindow", __func__);
+        trace_error("%s, failed to get NPNVnetscapeWindow\n", __func__);
     }
 
     g_signal_connect(G_OBJECT(fcd), "response", G_CALLBACK(fcd_response_handler), p);
     g_signal_connect(G_OBJECT(fcd), "close", G_CALLBACK(fcd_close_handler), p);
 
-    gtk_widget_show(fcd);
+    gw_gtk_widget_show(fcd);
 }
 
 int32_t

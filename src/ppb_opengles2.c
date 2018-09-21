@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013-2015  Rinat Ibragimov
+ * Copyright © 2013-2017  Rinat Ibragimov
  *
  * This file is part of FreshPlayerPlugin.
  *
@@ -22,19 +22,27 @@
  * SOFTWARE.
  */
 
-#include "ppb_opengles2.h"
-#include <pthread.h>
-#include <stdlib.h>
-#include "trace.h"
-#include "tables.h"
+#include "pp_interface.h"
 #include "pp_resource.h"
+#include "ppb_graphics3d.h"
+#include "ppb_opengles2.h"
 #include "reverse_constant.h"
+#include "static_assert.h"
+#include "tables.h"
+#include "trace_core.h"
+#include <GLES2/gl2.h>
 #include <GLES2/gl2ext.h>
+#include <glib.h>
+#include <pthread.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
+
 #if !HAVE_GLES2
 #include "shader_translator.h"
 #endif
-#include "pp_interface.h"
 
+STATIC_ASSERT(sizeof(struct pp_graphics3d_s) <= LARGEST_RESOURCE_SIZE);
 
 #define PROLOGUE(g3d, escape_statement)                                                 \
     struct pp_graphics3d_s *g3d = pp_resource_acquire(context, PP_RESOURCE_GRAPHICS3D); \

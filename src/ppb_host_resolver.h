@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013-2015  Rinat Ibragimov
+ * Copyright © 2013-2017  Rinat Ibragimov
  *
  * This file is part of FreshPlayerPlugin.
  *
@@ -22,12 +22,18 @@
  * SOFTWARE.
  */
 
-#ifndef FPP_PPB_HOST_RESOLVER_H
-#define FPP_PPB_HOST_RESOLVER_H
+#pragma once
 
-#include <ppapi/c/private/ppb_host_resolver_private.h>
+#include "pp_resource.h"
 #include <ppapi/c/ppb_host_resolver.h>
+#include <ppapi/c/private/ppb_host_resolver_private.h>
 
+struct pp_host_resolver_s {
+    COMMON_STRUCTURE_FIELDS
+    char                           *host;
+    struct PP_NetAddress_Private   *addrs;
+    uint32_t                        addr_count;
+};
 
 PP_Resource
 ppb_host_resolver_create(PP_Instance instance);
@@ -60,5 +66,3 @@ ppb_host_resolver_get_net_address(PP_Resource host_resolver, uint32_t index,
 
 PP_Resource
 ppb_host_resolver_get_net_address_1_0(PP_Resource host_resolver, uint32_t index);
-
-#endif // FPP_PPB_HOST_RESOLVER_H

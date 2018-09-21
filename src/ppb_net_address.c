@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013-2015  Rinat Ibragimov
+ * Copyright © 2013-2017  Rinat Ibragimov
  *
  * This file is part of FreshPlayerPlugin.
  *
@@ -22,17 +22,19 @@
  * SOFTWARE.
  */
 
-#include "ppb_net_address.h"
-#include <stdlib.h>
-#include <string.h>
-#include <netinet/in.h>
-#include "trace.h"
-#include "tables.h"
-#include "pp_resource.h"
 #include "pp_interface.h"
+#include "pp_resource.h"
+#include "ppb_net_address.h"
 #include "ppb_var.h"
 #include "static_assert.h"
+#include "tables.h"
+#include "trace_core.h"
+#include "trace_helpers.h"
+#include <glib.h>
+#include <netinet/in.h>
+#include <string.h>
 
+STATIC_ASSERT(sizeof(struct pp_net_address_s) <= LARGEST_RESOURCE_SIZE);
 
 PP_Bool
 ppb_net_address_private_are_equal(const struct PP_NetAddress_Private *addr1,

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013-2015  Rinat Ibragimov
+ * Copyright © 2013-2017  Rinat Ibragimov
  *
  * This file is part of FreshPlayerPlugin.
  *
@@ -22,14 +22,12 @@
  * SOFTWARE.
  */
 
-#ifndef FPP_ASYNC_NETWORK_H
-#define FPP_ASYNC_NETWORK_H
+#pragma once
 
 #include <ppapi/c/pp_completion_callback.h>
 #include <ppapi/c/pp_resource.h>
-#include <ppapi/c/pp_instance.h>
 #include <ppapi/c/private/ppb_net_address_private.h>
-
+#include <stdint.h>
 
 enum async_network_task_type_e {
     ASYNC_NETWORK_TCP_CONNECT,
@@ -69,5 +67,3 @@ async_network_task_push(struct async_network_task_s *task);
 
 struct async_network_task_s *
 async_network_task_create(void);
-
-#endif // FPP_ASYNC_NETWORK_H

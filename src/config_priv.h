@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013-2015  Rinat Ibragimov
+ * Copyright © 2013-2017  Rinat Ibragimov
  *
  * This file is part of FreshPlayerPlugin.
  *
@@ -22,69 +22,32 @@
  * SOFTWARE.
  */
 
-#include "config.h"
-#include <stdlib.h>
+#pragma once
 
-static
+/** name of binary (without path) */
 const char *
-plugin_path_list[] = {
-    "/opt/google/chrome",           // Chrome
-    "/opt/google/chrome-beta",      // Chrome beta
-    "/opt/google/chrome-unstable",  // Chrome unstable
-    "/usr/lib64/chromium",          // Chromium (Slackware)
-    "/usr/lib/chromium",            // Chromium (Slackware)
-    NULL
-};
+fpp_config_get_plugin_file_name(void);
 
-const char **
-fpp_config_get_plugin_path_list(void)
-{
-    return plugin_path_list;
-}
+/** default name of plugin to display on plugin list page */
+const char *
+fpp_config_get_plugin_name(void);
+
+/** list of mime types in NPAPI format */
+const char *
+fpp_config_get_plugin_mime_type(void);
 
 const char *
-fpp_config_get_default_plugin_version(void)
-{
-    return "1.0.0.0";
-}
+fpp_config_get_plugin_version(void);
 
 const char *
-fpp_config_get_plugin_name(void)
-{
-    return "libpdf.so renderer backend";
-}
+fpp_config_get_plugin_descr(void);
 
-const char *
-fpp_config_get_default_plugin_descr(void)
-{
-    return "libpdf.so renderer backend";
-}
-
-const char *
-fpp_config_get_plugin_mime_type(void)
-{
-    return "application/x-freshwrapper-libpdf-so::libpdf renderer";
-}
-
+/** return full path to a plugin if set */
 char *
-fpp_config_get_plugin_path(void)
-{
-    return NULL;
-}
-
-const char *
-fpp_config_get_plugin_file_name(void)
-{
-    return "libpdf.so";
-}
-
-uintptr_t
-fpp_config_plugin_has_manifest(void)
-{
-    return 0;
-}
+fpp_config_get_plugin_path(void);
 
 void
-fpp_config_detect_plugin_specific_quirks(void)
-{
-}
+fpp_config_detect_plugin_specific_quirks(void);
+
+void
+fpp_config_find_backend_plugin(void);

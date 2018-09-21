@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013-2015  Rinat Ibragimov
+ * Copyright © 2013-2017  Rinat Ibragimov
  *
  * This file is part of FreshPlayerPlugin.
  *
@@ -22,19 +22,24 @@
  * SOFTWARE.
  */
 
-#include "ppb_instance.h"
-#include <pthread.h>
-#include <stdlib.h>
-#include "trace.h"
-#include "tables.h"
-#include "pp_resource.h"
-#include "ppb_var.h"
-#include "ppb_core.h"
-#include "ppb_message_loop.h"
 #include "n2p_proxy_class.h"
-#include <ppapi/c/pp_errors.h>
 #include "pp_interface.h"
+#include "pp_resource.h"
+#include "ppb_core.h"
+#include "ppb_graphics2d.h"
+#include "ppb_graphics3d.h"
+#include "ppb_instance.h"
+#include "ppb_message_loop.h"
+#include "ppb_var.h"
+#include "static_assert.h"
+#include "tables.h"
+#include "trace_core.h"
+#include "trace_helpers.h"
+#include "utils.h"
+#include <ppapi/c/pp_errors.h>
+#include <pthread.h>
 
+STATIC_ASSERT(sizeof(struct pp_instance_s) <= LARGEST_RESOURCE_SIZE);
 
 static
 void

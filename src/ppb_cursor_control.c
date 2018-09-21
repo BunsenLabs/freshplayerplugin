@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013-2015  Rinat Ibragimov
+ * Copyright © 2013-2017  Rinat Ibragimov
  *
  * This file is part of FreshPlayerPlugin.
  *
@@ -22,18 +22,21 @@
  * SOFTWARE.
  */
 
-#include "ppb_cursor_control.h"
-#include <stdlib.h>
-#include <X11/Xlib.h>
-#include <X11/cursorfont.h>
-#include <X11/Xcursor/Xcursor.h>
-#include <pthread.h>
+#include "pp_interface.h"
 #include "pp_resource.h"
 #include "ppb_core.h"
+#include "ppb_cursor_control.h"
+#include "ppb_image_data.h"
+#include "ppb_instance.h"
 #include "tables.h"
-#include "trace.h"
-#include "pp_interface.h"
-
+#include "trace_core.h"
+#include "trace_helpers.h"
+#include <X11/Xcursor/Xcursor.h>
+#include <X11/Xlib.h>
+#include <X11/cursorfont.h>
+#include <glib.h>
+#include <pthread.h>
+#include <string.h>
 
 struct comt_param_s {
     PP_Instance     instance_id;
@@ -85,8 +88,10 @@ set_cursor_ptac(void *user_data)
     } else if (pp_i->windowed_mode) {
         wnd = pp_i->wnd;
     } else {
-        if (npn.getvalue(pp_i->npp, NPNVnetscapeWindow, &wnd) != NPERR_NO_ERROR)
+        if (npn.getvalue(pp_i->npp, NPNVnetscapeWindow, &wnd) != NPERR_NO_ERROR) {
+            trace_error("%s, failed to get NPNnetscapeWindow\n", __func__);
             wnd = None;
+        }
     }
 
     pthread_mutex_lock(&display.lock);

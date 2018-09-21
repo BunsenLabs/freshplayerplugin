@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013-2015  Rinat Ibragimov
+ * Copyright © 2013-2017  Rinat Ibragimov
  *
  * This file is part of FreshPlayerPlugin.
  *
@@ -22,11 +22,9 @@
  * SOFTWARE.
  */
 
-#ifndef FPP_PPB_FLASH_FULLSCREEN_H
-#define FPP_PPB_FLASH_FULLSCREEN_H
+#pragma once
 
 #include <ppapi/c/private/ppb_flash_fullscreen.h>
-
 
 PP_Bool
 ppb_flash_fullscreen_is_fullscreen(PP_Instance instance);
@@ -36,5 +34,3 @@ ppb_flash_fullscreen_set_fullscreen(PP_Instance instance, PP_Bool fullscreen);
 
 PP_Bool
 ppb_flash_fullscreen_get_screen_size(PP_Instance instance, struct PP_Size *size);
-
-#endif // FPP_PPB_FLASH_FULLSCREEN_H

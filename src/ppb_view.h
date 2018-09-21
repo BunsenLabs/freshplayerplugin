@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013-2015  Rinat Ibragimov
+ * Copyright © 2013-2017  Rinat Ibragimov
  *
  * This file is part of FreshPlayerPlugin.
  *
@@ -22,11 +22,16 @@
  * SOFTWARE.
  */
 
-#ifndef FPP_PPB_VIEW_H
-#define FPP_PPB_VIEW_H
+#pragma once
 
-#include <ppapi/c/ppb_view.h>
+#include "pp_resource.h"
 #include <ppapi/c/dev/ppb_view_dev.h>
+#include <ppapi/c/ppb_view.h>
+
+struct pp_view_s {
+    COMMON_STRUCTURE_FIELDS
+    struct PP_Rect      rect;
+};
 
 PP_Bool
 ppb_view_is_view(PP_Resource resource);
@@ -54,6 +59,3 @@ ppb_view_get_css_scale(PP_Resource resource);
 
 PP_Bool
 ppb_view_get_scroll_offset(PP_Resource resource, struct PP_Point *offset);
-
-
-#endif // FPP_PPB_VIEW_H

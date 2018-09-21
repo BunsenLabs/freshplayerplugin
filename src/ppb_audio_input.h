@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013-2015  Rinat Ibragimov
+ * Copyright © 2013-2017  Rinat Ibragimov
  *
  * This file is part of FreshPlayerPlugin.
  *
@@ -22,11 +22,9 @@
  * SOFTWARE.
  */
 
-#ifndef FPP_PPB_AUDIO_INPUT_H
-#define FPP_PPB_AUDIO_INPUT_H
+#pragma once
 
 #include <ppapi/c/dev/ppb_audio_input_dev.h>
-
 
 PP_Resource
 ppb_audio_input_create(PP_Instance instance);
@@ -63,5 +61,3 @@ ppb_audio_input_stop_capture(PP_Resource audio_input);
 
 void
 ppb_audio_input_close(PP_Resource audio_input);
-
-#endif // FPP_PPB_AUDIO_INPUT_H

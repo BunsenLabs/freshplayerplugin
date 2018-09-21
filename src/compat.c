@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013-2015  Rinat Ibragimov
+ * Copyright © 2013-2017  Rinat Ibragimov
  *
  * This file is part of FreshPlayerPlugin.
  *
@@ -24,7 +24,6 @@
 
 #include "compat.h"
 
-
 #ifdef VER
 #error macro name collision
 #endif
@@ -46,7 +45,7 @@ g_array_set_clear_func(GArray *array, GDestroyNotify clear_func)
 {
    //  Only for compatibility.
    // TODO: memory leaks?
-} 
+}
 #endif
 
 
@@ -64,19 +63,5 @@ g_list_free_full(GList *list, GDestroyNotify free_func)
 {
     g_list_foreach(list, call_destroy_notify, free_func);
     g_list_free(list);
-}
-#endif
-
-#if (GTK_MAJOR_VERSION * 1000 + GTK_MINOR_VERSION < 2 * 1000 + 24)
-GdkWindow *
-gdk_x11_window_lookup_for_display(GdkDisplay *gdpy, Window wnd)
-{
-    return gdk_window_lookup_for_display(gdpy, wnd);
-}
-
-GdkWindow *
-gdk_x11_window_foreign_new_for_display(GdkDisplay *gdpy, Window wnd)
-{
-    return gdk_window_foreign_new_for_display(gdpy, wnd);
 }
 #endif

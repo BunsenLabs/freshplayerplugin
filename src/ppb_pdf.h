@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013-2015  Rinat Ibragimov
+ * Copyright © 2013-2017  Rinat Ibragimov
  *
  * This file is part of FreshPlayerPlugin.
  *
@@ -22,13 +22,11 @@
  * SOFTWARE.
  */
 
-#ifndef FPP_PPB_PDF_H
-#define FPP_PPB_PDF_H
+#pragma once
 
 #include <ppapi/c/dev/deprecated_bool.h>
-#include <ppapi/c/trusted/ppb_browser_font_trusted.h>
 #include <ppapi/c/private/ppb_pdf.h>
-
+#include <ppapi/c/trusted/ppb_browser_font_trusted.h>
 
 PP_Resource
 ppb_pdf_get_font_file_with_fallback(PP_Instance instance,
@@ -81,5 +79,3 @@ void
 ppb_pdf_get_v8_external_snapshot_data(PP_Instance instance, const char **natives_data_out,
                                       int *natives_size_out, const char **snapshot_data_out,
                                       int *snapshot_size_out);
-
-#endif // FPP_PPB_PDF_H

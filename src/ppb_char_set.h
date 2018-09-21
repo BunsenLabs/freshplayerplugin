@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013-2015  Rinat Ibragimov
+ * Copyright © 2013-2017  Rinat Ibragimov
  *
  * This file is part of FreshPlayerPlugin.
  *
@@ -22,11 +22,9 @@
  * SOFTWARE.
  */
 
-#ifndef FPP_PPB_CHAR_SET_H
-#define FPP_PPB_CHAR_SET_H
+#pragma once
 
 #include <ppapi/c/dev/ppb_char_set_dev.h>
-
 
 char *
 ppb_char_set_utf16_to_char_set(PP_Instance instance, const uint16_t *utf16, uint32_t utf16_len,
@@ -40,5 +38,3 @@ ppb_char_set_char_set_to_utf16(PP_Instance instance, const char *input, uint32_t
 
 struct PP_Var
 ppb_char_set_get_default_char_set(PP_Instance instance);
-
-#endif // FPP_PPB_CHAR_SET_H

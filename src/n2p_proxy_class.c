@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013-2015  Rinat Ibragimov
+ * Copyright © 2013-2017  Rinat Ibragimov
  *
  * This file is part of FreshPlayerPlugin.
  *
@@ -27,16 +27,25 @@
  */
 
 #include "n2p_proxy_class.h"
-#include "ppapi/c/dev/deprecated_bool.h"
-#include "trace.h"
-#include "tables.h"
-#include "pp_resource.h"
-#include <npapi/npruntime.h>
 #include "ppb_core.h"
-#include "ppb_var.h"
 #include "ppb_message_loop.h"
+#include "ppb_var.h"
+#include "tables.h"
+#include "trace_core.h"
+#include "trace_helpers.h"
+#include "utils.h"
+#include <glib.h>
+#include <npapi/npapi.h>
+#include <npapi/npfunctions.h>
+#include <npapi/npruntime.h>
+#include <ppapi/c/dev/ppp_class_deprecated.h>
+#include <ppapi/c/pp_bool.h>
 #include <ppapi/c/pp_errors.h>
-
+#include <ppapi/c/pp_resource.h>
+#include <ppapi/c/pp_var.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdlib.h>
 
 struct has_property_param_s {
     struct PP_Var       name;
@@ -235,6 +244,7 @@ n2p_call_ptac(void *param)
 
         p->result = var;
     } else {
+        trace_error("%s, NPN_Invoke failed (or there were no npp)\n", __func__);
         p->result = PP_MakeUndefined();
     }
 

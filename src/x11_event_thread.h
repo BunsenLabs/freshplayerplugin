@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013-2015  Rinat Ibragimov
+ * Copyright © 2013-2017  Rinat Ibragimov
  *
  * This file is part of FreshPlayerPlugin.
  *
@@ -22,13 +22,12 @@
  * SOFTWARE.
  */
 
-#ifndef FPP_X11_EVENT_THREAD_H
-#define FPP_X11_EVENT_THREAD_H
+#pragma once
 
-#include <npapi/npfunctions.h>
 #include <X11/Xlib.h>
+#include <npapi/npfunctions.h>
 #include <ppapi/c/pp_instance.h>
-
+#include <stdint.h>
 
 Window
 x11et_register_window(PP_Instance instance, Window wnd, NPP_HandleEventProcPtr handle_event_cb,
@@ -36,6 +35,3 @@ x11et_register_window(PP_Instance instance, Window wnd, NPP_HandleEventProcPtr h
 
 void
 x11et_unregister_window(Window wnd);
-
-
-#endif // FPP_X11_EVENT_THREAD_H

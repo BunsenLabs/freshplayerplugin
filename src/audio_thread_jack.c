@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013-2015  Rinat Ibragimov
+ * Copyright © 2013-2017  Rinat Ibragimov
  *
  * This file is part of FreshPlayerPlugin.
  *
@@ -23,16 +23,18 @@
  */
 
 #include "audio_thread.h"
-#include <pthread.h>
+#include "config.h"
+#include "trace_core.h"
+#include "trace_helpers.h"
+#include <glib.h>
 #include <jack/jack.h>
 #include <jack/ringbuffer.h>
-#include <soxr.h>
-#include <glib.h>
-#include <string.h>
-#include <stdlib.h>
 #include <math.h>
-#include "trace.h"
-#include "config.h"
+#include <pthread.h>
+#include <soxr.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
 
 #define CLIENT_NAME     "freshwrapper"
 

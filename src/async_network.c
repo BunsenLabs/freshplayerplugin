@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013-2015  Rinat Ibragimov
+ * Copyright © 2013-2017  Rinat Ibragimov
  *
  * This file is part of FreshPlayerPlugin.
  *
@@ -23,26 +23,33 @@
  */
 
 #include "async_network.h"
-#include <glib.h>
-#include <stdio.h>
-#include <pthread.h>
-#include <sys/types.h>
-#include <sys/socket.h>
+#include "config.h"
+#include "pp_resource.h"
+#include "ppb_host_resolver.h"
+#include "ppb_message_loop.h"
+#include "ppb_tcp_socket.h"
+#include "ppb_udp_socket.h"
+#include "trace_core.h"
+#include "trace_helpers.h"
 #include <arpa/inet.h>
-#include <netinet/in.h>
-#include <netdb.h>
-#include <event2/event.h>
-#include <event2/util.h>
+#include <errno.h>
 #include <event2/dns.h>
+#include <event2/event.h>
 #include <event2/thread.h>
+#include <event2/util.h>
+#include <glib.h>
+#include <netdb.h>
+#include <netinet/in.h>
 #include <ppapi/c/pp_errors.h>
 #include <ppapi/c/private/ppb_net_address_private.h>
-#include "pp_resource.h"
-#include "ppb_core.h"
-#include "trace.h"
-#include "config.h"
-#include "ppb_message_loop.h"
-
+#include <pthread.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/socket.h>
+#include <sys/time.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 static struct event_base *event_b = NULL;
 static struct evdns_base *evdns_b = NULL;
