@@ -3,7 +3,7 @@ From: Rinat Ibragimov <ibragimovrinat@mail.ru>
 Date: Tue, 26 Dec 2017 16:16:39 +0300
 Subject: [PATCH] ppb_video_decoder: use AV_ prefixed macros
 
-Looks like newer FFmpeg versions have droped old definitions.
+Looks like newer FFmpeg versions have dropped old definitions.
 ---
  cmake/ffmpeg-compat/CMakeLists.txt     |  1 +
  cmake/ffmpeg-compat/cfg_avcodecflags.c |  4 ++++

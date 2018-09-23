@@ -1,6 +1,9 @@
 Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Name: freshplayerplugin
 Source: https://github.com/i-rinat/freshplayerplugin/releases
+Disclaimer:
+  This free software is only a wrapper allowing to run the binary-only
+  flashplayer plugin, hence its classification in contrib.
 
 Files: *
 Copyright: 2013-2015  Rinat Ibragimov
