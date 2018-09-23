@@ -34,6 +34,9 @@ override_dh_auto_configure:
 		-DWITH_NACL=TRUE \
 		-DWITH_PEPPERFLASH=TRUE
 
+override_dh_auto_install:
+	dh_auto_install --destdir=debian/tmp --builddir build --
+
 override_dh_makeshlibs:
 	# not invoking dh_makeshlibs: the generated library is private
 	# no need to generate shlibs file nor ldconfig calls

@@ -2,6 +2,12 @@ freshplayerplugin (0.3.9-1) unstable; urgency=medium
 
   * New upstream release
     Fix compatibility with the latest Firefox versions (Closes: #902256)
+  * big thanks to Gunnar Hjalmarsson <gunnar.hjalmarsson@telia.com>
+    that help me for the following points:
+    + remove browser-plugin-freshplayer-libpdf and
+      browser-plugin-freshplayer-nacl binary packages whose wrapper have been
+      dropped upstream
+    + backport a patch from upstream to build with latest ffmpeg
 
  -- Vincent Danjean <vdanjean@debian.org>  Fri, 21 Sep 2018 10:27:22 +0200
 
