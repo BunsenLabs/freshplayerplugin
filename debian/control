@@ -3,7 +3,7 @@ Maintainer: Vincent Danjean <vdanjean@debian.org>
 Section: contrib/web
 XS-Autobuild: yes
 Priority: optional
-Build-Depends: debhelper (>= 9),
+Build-Depends: debhelper (>= 10),
                cmake,
                pkg-config,
                libglib2.0-dev,
